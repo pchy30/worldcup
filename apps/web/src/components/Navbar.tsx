@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Trophy, LayoutDashboard, Users, LogOut } from "lucide-react";
+import { Trophy, LayoutDashboard, Users } from "lucide-react";
 import NavbarLogout from "./NavbarLogout";
+import MobileMenuClient from "./MobileMenuClient";
 
 export default async function Navbar() {
   const supabase = createClient();
@@ -36,7 +37,7 @@ export default async function Navbar() {
             </span>
           </Link>
 
-          {/* Centre nav */}
+          {/* Centre nav — desktop only */}
           {user && (
             <div className="hidden md:flex items-center gap-1">
               <Link
@@ -57,24 +58,25 @@ export default async function Navbar() {
           )}
 
           {/* Right side */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {user ? (
               <>
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-accent text-primary font-bold text-sm flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-accent text-primary font-bold text-sm flex items-center justify-center flex-shrink-0">
                     {initial}
                   </div>
-                  <span className="hidden sm:block text-sm text-gray-300 font-medium">
+                  <span className="hidden sm:block text-sm text-gray-300 font-medium max-w-[120px] truncate">
                     {displayName}
                   </span>
                 </div>
                 <NavbarLogout />
+                <MobileMenuClient isLoggedIn={true} />
               </>
             ) : (
               <div className="flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="text-sm text-gray-300 hover:text-white px-4 py-2 rounded-lg hover:bg-primary/60 transition-colors duration-200 font-medium"
+                  className="text-sm text-gray-300 hover:text-white px-3 py-2 rounded-lg hover:bg-primary/60 transition-colors duration-200 font-medium"
                 >
                   Sign in
                 </Link>

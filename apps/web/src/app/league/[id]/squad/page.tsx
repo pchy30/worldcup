@@ -116,7 +116,7 @@ export default async function SquadPage({ params }: PageProps) {
             className="relative w-full rounded-2xl overflow-hidden"
             style={{
               background: "linear-gradient(180deg, #1a6b2f 0%, #1e7a35 25%, #1a6b2f 50%, #1e7a35 75%, #1a6b2f 100%)",
-              minHeight: "480px",
+              minHeight: "clamp(320px, 60vw, 480px)",
             }}
           >
             {/* Pitch markings */}
@@ -136,9 +136,9 @@ export default async function SquadPage({ params }: PageProps) {
                 const posPlayers = mySquad.filter((p) => p.position === pos);
                 if (posPlayers.length === 0) return null;
                 return (
-                  <div key={pos} className="flex justify-center gap-4 flex-wrap">
+                  <div key={pos} className="flex justify-center gap-2 sm:gap-4 flex-wrap">
                     {posPlayers.map((player) => (
-                      <div key={player.id} className="flex flex-col items-center gap-1 w-20">
+                      <div key={player.id} className="flex flex-col items-center gap-1 w-14 sm:w-20">
                         {/* Player token */}
                         <div className="relative">
                           <div className="w-12 h-12 rounded-full bg-white/10 border-2 border-white/60 flex items-center justify-center text-white font-bold text-sm shadow-lg backdrop-blur-sm">

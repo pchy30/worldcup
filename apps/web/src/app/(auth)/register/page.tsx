@@ -79,17 +79,17 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-6 sm:py-12">
       <div className="w-full max-w-md">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <div className="w-14 h-14 bg-accent/15 rounded-full flex items-center justify-center border border-accent/30">
-              <Trophy className="w-7 h-7 text-accent" />
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="flex justify-center mb-3 sm:mb-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-accent/15 rounded-full flex items-center justify-center border border-accent/30">
+              <Trophy className="w-6 h-6 sm:w-7 sm:h-7 text-accent" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Create account</h1>
-          <p className="text-muted">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Create account</h1>
+          <p className="text-muted text-sm sm:text-base">
             Join World Cup Fantasy and draft your squad
           </p>
         </div>

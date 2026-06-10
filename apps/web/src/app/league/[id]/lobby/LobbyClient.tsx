@@ -143,9 +143,9 @@ export default function LobbyClient({
           <h2 className="text-sm font-semibold text-muted uppercase tracking-wider mb-3">
             Invite Code
           </h2>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="flex-1 bg-primary rounded-lg border border-muted/30 px-4 py-3">
-              <span className="font-mono text-2xl font-bold tracking-widest text-accent">
+              <span className="font-mono text-xl sm:text-2xl font-bold tracking-widest text-accent">
                 {league.invite_code}
               </span>
             </div>
@@ -217,7 +217,7 @@ export default function LobbyClient({
                   <div className="w-8 h-8 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center text-sm font-bold text-accent">
                     {member.display_name.charAt(0).toUpperCase()}
                   </div>
-                  <span className="flex-1 font-medium text-white text-sm">
+                  <span className="flex-1 min-w-0 font-medium text-white text-sm truncate">
                     {member.display_name}
                     {isCurrentUser && (
                       <span className="ml-2 text-xs text-muted">(you)</span>

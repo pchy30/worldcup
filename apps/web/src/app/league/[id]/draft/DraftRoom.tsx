@@ -7,7 +7,7 @@ import type { League, LeagueMember, Player, DraftPick, PlayerPosition } from "@w
 import PlayerCard from "@/components/PlayerCard";
 import CountdownTimer from "@/components/CountdownTimer";
 import PositionBadge from "@/components/PositionBadge";
-import { Search, X, Loader2, LayoutGrid, List, CheckCircle2 } from "lucide-react";
+import { Search, X, Loader2, LayoutGrid, List, CheckCircle2, History, Users } from "lucide-react";
 
 interface DraftRoomProps {
   league: League;
@@ -39,6 +39,7 @@ export default function DraftRoom({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmModal, setConfirmModal] = useState(false);
   const [squadView, setSquadView] = useState<"pitch" | "list">("pitch");
+  const [mobileTab, setMobileTab] = useState<"players" | "history" | "squad">("players");
 
   // Derived state
   const pickedPlayerIds = useMemo(
@@ -205,9 +206,9 @@ export default function DraftRoom({
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
       {/* Top bar */}
-      <div className="bg-surface border-b border-muted/30 px-4 py-3 flex items-center justify-between flex-shrink-0">
-        <div>
-          <h1 className="font-bold text-white text-lg leading-tight">
+      <div className="bg-surface border-b border-muted/30 px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between flex-shrink-0 gap-3">
+        <div className="min-w-0">
+          <h1 className="font-bold text-white text-base sm:text-lg leading-tight truncate">
             {league.name}
           </h1>
           <p className="text-xs text-muted">
@@ -216,12 +217,12 @@ export default function DraftRoom({
           </p>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
           {/* Current picker */}
           <div className="text-right">
-            <p className="text-xs text-muted">Now picking</p>
+            <p className="text-[10px] sm:text-xs text-muted">Now picking</p>
             <p
-              className={`text-sm font-bold ${isMyTurn ? "text-accent" : "text-white"}`}
+              className={`text-xs sm:text-sm font-bold ${isMyTurn ? "text-accent" : "text-white"}`}
             >
               {isMyTurn ? "Your turn!" : (currentPickerMember?.display_name ?? "…")}
             </p>
@@ -230,20 +231,46 @@ export default function DraftRoom({
           {/* Timer (live mode only) */}
           {league.draft_mode === "live" &&
             currentLeague.current_pick_deadline && (
-              <CountdownTimer
-                deadline={currentLeague.current_pick_deadline}
-                onExpired={() => {
-                  // Auto-advance handled server-side; just refresh state
-                }}
-              />
+              <div className="scale-75 sm:scale-100 origin-right">
+                <CountdownTimer
+                  deadline={currentLeague.current_pick_deadline}
+                  onExpired={() => {
+                    // Auto-advance handled server-side; just refresh state
+                  }}
+                />
+              </div>
             )}
+        </div>
+      </div>
+
+      {/* Mobile tab bar */}
+      <div className="md:hidden flex-shrink-0 border-b border-muted/20 bg-surface">
+        <div className="flex">
+          {(["players", "history", "squad"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setMobileTab(tab)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition-colors border-b-2 ${
+                mobileTab === tab
+                  ? "border-accent text-accent"
+                  : "border-transparent text-muted hover:text-white"
+              }`}
+            >
+              {tab === "players" && <Search className="w-3.5 h-3.5" />}
+              {tab === "history" && <History className="w-3.5 h-3.5" />}
+              {tab === "squad" && <Users className="w-3.5 h-3.5" />}
+              <span className="capitalize">
+                {tab === "squad" ? `Squad ${mySquad.length}/7` : tab}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Main layout */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left: Player search panel */}
-        <div className="w-full md:w-[55%] lg:w-[60%] flex flex-col border-r border-muted/20 overflow-hidden">
+        {/* Player search panel — full width on mobile (tab), partial on desktop */}
+        <div className={`flex-col border-r border-muted/20 overflow-hidden md:flex md:w-[55%] lg:w-[60%] ${mobileTab === "players" ? "flex w-full" : "hidden"}`}>
           {/* Filters */}
           <div className="p-3 border-b border-muted/20 space-y-2 flex-shrink-0">
             {/* Search */}
@@ -332,16 +359,16 @@ export default function DraftRoom({
         </div>
 
         {/* Right panel: Pick history + My squad */}
-        <div className="hidden md:flex flex-col flex-1 overflow-hidden">
+        <div className={`flex-col flex-1 overflow-hidden md:flex ${mobileTab !== "players" ? "flex w-full" : "hidden"}`}>
           {/* Pick history */}
-          <div className="flex-1 overflow-hidden flex flex-col border-b border-muted/20">
+          <div className={`overflow-hidden flex-col border-b border-muted/20 md:flex md:flex-1 ${mobileTab === "history" ? "flex flex-1" : "hidden"}`}>
             <div className="px-4 py-3 border-b border-muted/20 flex-shrink-0">
               <h2 className="text-sm font-semibold text-muted uppercase tracking-wider">
                 Pick History
               </h2>
             </div>
             <div className="flex-1 overflow-y-auto scrollbar-thin p-3 space-y-1.5">
-              {[...picks].reverse().map((pick, idx) => {
+              {[...picks].reverse().map((pick) => {
                 const picker = members.find(
                   (m) => m.user_id === pick.manager_id
                 );
@@ -373,8 +400,8 @@ export default function DraftRoom({
             </div>
           </div>
 
-          {/* My Squad — pitch view */}
-          <div className="flex-shrink-0 flex flex-col" style={{ height: "320px" }}>
+          {/* My Squad — pitch/list view */}
+          <div className={`flex-col md:flex-shrink-0 md:flex ${mobileTab === "squad" ? "flex flex-1" : "hidden"}`} style={{ height: undefined }}>
             <div className="px-4 py-2 border-b border-muted/20 flex items-center justify-between flex-shrink-0">
               <h2 className="text-sm font-semibold text-muted uppercase tracking-wider">
                 My Squad
@@ -402,6 +429,7 @@ export default function DraftRoom({
                 className="flex-1 relative overflow-hidden"
                 style={{
                   background: "linear-gradient(180deg, #1a6b2f 0%, #1e7a35 25%, #1a6b2f 50%, #1e7a35 75%, #1a6b2f 100%)",
+                  minHeight: "240px",
                 }}
               >
                 <div className="absolute inset-0 pointer-events-none">
@@ -420,9 +448,9 @@ export default function DraftRoom({
                       const posPlayers = squadByPosition[pos];
                       if (posPlayers.length === 0) return null;
                       return (
-                        <div key={pos} className="flex justify-center gap-3">
+                        <div key={pos} className="flex justify-center gap-2 sm:gap-3">
                           {posPlayers.map((p) => (
-                            <div key={p.id} className="flex flex-col items-center gap-0.5 w-14">
+                            <div key={p.id} className="flex flex-col items-center gap-0.5 w-12 sm:w-14">
                               <div className="w-8 h-8 rounded-full bg-white/15 border border-white/60 flex items-center justify-center text-white font-bold text-xs shadow">
                                 {p.name.split(" ").pop()?.charAt(0).toUpperCase()}
                               </div>
@@ -463,29 +491,6 @@ export default function DraftRoom({
               </div>
             )}
           </div>
-        </div>
-      </div>
-
-      {/* Mobile squad bar — shown only on small screens */}
-      <div className="md:hidden flex-shrink-0 border-t border-muted/20 overflow-x-auto">
-        <div className="flex items-center gap-1 px-3 py-2 min-w-max">
-          <span className="text-xs text-muted font-semibold mr-2 whitespace-nowrap">
-            Squad {mySquad.length}/7:
-          </span>
-          {(["FWD", "MID", "DEF", "GK"] as const).map((pos) =>
-            squadByPosition[pos].map((p) => (
-              <div key={p.id} className="flex flex-col items-center gap-0.5 mx-1">
-                <div className="w-7 h-7 rounded-full bg-surface border border-accent/60 flex items-center justify-center text-white font-bold text-xs">
-                  {p.name.split(" ").pop()?.charAt(0).toUpperCase()}
-                </div>
-                <span className="text-[8px] text-white/70 whitespace-nowrap">{p.name.split(" ").pop()}</span>
-                <span className="text-[8px] font-bold text-accent">{p.position}</span>
-              </div>
-            ))
-          )}
-          {mySquad.length === 0 && (
-            <span className="text-xs text-muted">No players yet</span>
-          )}
         </div>
       </div>
 
