@@ -17,6 +17,7 @@ build/
 
 # Supabase local
 supabase/.temp/
+supabase/.branches/
 
 # OS
 .DS_Store
