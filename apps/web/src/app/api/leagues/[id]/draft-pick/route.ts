@@ -114,7 +114,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   // 6. Max 2 players per national team
   const teamCounts: Record<string, number> = {};
   for (const sp of mySquad ?? []) {
-    const teamId = (sp.player as { team_id: string } | null)?.team_id ?? "";
+    const p = Array.isArray(sp.player) ? sp.player[0] : sp.player;
+    const teamId = (p as { team_id: string } | null)?.team_id ?? "";
     teamCounts[teamId] = (teamCounts[teamId] ?? 0) + 1;
   }
 
