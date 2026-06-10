@@ -7,7 +7,7 @@ import type { League, LeagueMember, Player, DraftPick, PlayerPosition } from "@w
 import PlayerCard from "@/components/PlayerCard";
 import CountdownTimer from "@/components/CountdownTimer";
 import PositionBadge from "@/components/PositionBadge";
-import { Search, X, Loader2, CheckCircle2 } from "lucide-react";
+import { Search, X, Loader2 } from "lucide-react";
 
 interface DraftRoomProps {
   league: League;
@@ -372,9 +372,9 @@ export default function DraftRoom({
             </div>
           </div>
 
-          {/* My Squad */}
-          <div className="flex-shrink-0 max-h-64 overflow-hidden flex flex-col">
-            <div className="px-4 py-3 border-b border-muted/20 flex items-center justify-between">
+          {/* My Squad — pitch view */}
+          <div className="flex-shrink-0 flex flex-col" style={{ height: "280px" }}>
+            <div className="px-4 py-2 border-b border-muted/20 flex items-center justify-between flex-shrink-0">
               <h2 className="text-sm font-semibold text-muted uppercase tracking-wider">
                 My Squad
               </h2>
@@ -382,31 +382,45 @@ export default function DraftRoom({
                 {mySquad.length}/7
               </span>
             </div>
-            <div className="flex-1 overflow-y-auto scrollbar-thin p-3 space-y-3">
-              {POSITIONS.map((pos) => {
-                const posPlayers = squadByPosition[pos];
-                if (posPlayers.length === 0) return null;
-                return (
-                  <div key={pos}>
-                    <p className="text-xs text-muted mb-1 font-semibold">
-                      {pos}
-                    </p>
-                    {posPlayers.map((p) => (
-                      <div
-                        key={p.id}
-                        className="flex items-center gap-2 text-sm text-white py-1"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5 text-accent flex-shrink-0" />
-                        <span className="truncate">{p.name}</span>
+            <div
+              className="flex-1 relative overflow-hidden"
+              style={{
+                background: "linear-gradient(180deg, #1a6b2f 0%, #1e7a35 25%, #1a6b2f 50%, #1e7a35 75%, #1a6b2f 100%)",
+              }}
+            >
+              {/* Pitch markings */}
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full border border-white/20" />
+                <div className="absolute left-0 right-0 top-1/2 h-px bg-white/20" />
+                <div className="absolute left-1/2 -translate-x-1/2 top-0 w-24 h-10 border-b border-x border-white/20" />
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-24 h-10 border-t border-x border-white/20" />
+              </div>
+
+              {mySquad.length === 0 ? (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <p className="text-white/40 text-xs">No players yet</p>
+                </div>
+              ) : (
+                <div className="relative z-10 flex flex-col justify-around h-full py-2">
+                  {(["FWD", "MID", "DEF", "GK"] as const).map((pos) => {
+                    const posPlayers = squadByPosition[pos];
+                    if (posPlayers.length === 0) return null;
+                    return (
+                      <div key={pos} className="flex justify-center gap-3">
+                        {posPlayers.map((p) => (
+                          <div key={p.id} className="flex flex-col items-center gap-0.5 w-14">
+                            <div className="w-8 h-8 rounded-full bg-white/15 border border-white/60 flex items-center justify-center text-white font-bold text-xs shadow">
+                              {p.name.split(" ").pop()?.charAt(0).toUpperCase()}
+                            </div>
+                            <p className="text-white text-[10px] font-semibold text-center truncate w-full leading-tight drop-shadow">
+                              {p.name.split(" ").pop()}
+                            </p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                );
-              })}
-              {mySquad.length === 0 && (
-                <p className="text-muted text-xs text-center py-4">
-                  No players drafted yet.
-                </p>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>
