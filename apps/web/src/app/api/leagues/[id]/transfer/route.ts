@@ -127,7 +127,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
   const teamCounts: Record<string, number> = {};
   for (const sp of squadWithoutOut) {
-    const teamId = (sp.player as { team_id: string } | null)?.team_id ?? "";
+    const p = Array.isArray(sp.player) ? sp.player[0] : sp.player;
+    const teamId = (p as { team_id: string } | null)?.team_id ?? "";
     teamCounts[teamId] = (teamCounts[teamId] ?? 0) + 1;
   }
 
