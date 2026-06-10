@@ -170,9 +170,8 @@ export default function HomePage() {
           <div className="w-2 h-2 rounded-full bg-accent" />
           <div className="w-2 h-2 rounded-full bg-wc-red" />
         </div>
-        <p>
-          &copy; {new Date().getFullYear()} World Cup Fantasy. Built for the beautiful game.
-        </p>
+        <p>&copy; {new Date().getFullYear()} World Cup Fantasy. Built for the beautiful game.</p>
+        <p className="text-muted/50 text-xs mt-1">Built and engineered by Choudhury &amp; Chowdhury</p>
       </footer>
     </div>
   );
