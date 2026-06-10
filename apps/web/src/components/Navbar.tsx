@@ -25,7 +25,9 @@ export default async function Navbar() {
   }
 
   return (
-    <nav className="bg-surface border-b border-muted/30 sticky top-0 z-50">
+    <nav className="bg-surface sticky top-0 z-50" style={{ borderBottom: "1px solid rgba(245,183,0,0.15)" }}>
+      {/* WC colour stripe */}
+      <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, #003DA5 0%, #F5B700 50%, #E5001B 100%)" }} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}

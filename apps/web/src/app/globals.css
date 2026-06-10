@@ -3,13 +3,15 @@
 @tailwind utilities;
 
 :root {
-  --color-primary: #0d1b2a;
+  --color-primary: #0a1628;
   --color-accent: #f5b700;
-  --color-surface: #1a2d42;
+  --color-surface: #112240;
   --color-muted: #4a6080;
+  --color-wc-blue: #003da5;
+  --color-wc-red: #e5001b;
   --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 13, 27, 42;
-  --background-end-rgb: 26, 45, 66;
+  --background-start-rgb: 10, 22, 40;
+  --background-end-rgb: 17, 34, 64;
 }
 
 html {
@@ -18,11 +20,10 @@ html {
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-    to bottom,
-    rgb(var(--background-start-rgb)),
-    rgb(var(--background-end-rgb))
-  );
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(0, 61, 165, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 0%, rgba(229, 0, 27, 0.08) 0%, transparent 50%),
+    linear-gradient(to bottom, rgb(var(--background-start-rgb)), rgb(var(--background-end-rgb)));
   min-height: 100vh;
 }
 
@@ -49,15 +50,15 @@ body {
 
 @layer components {
   .btn-primary {
-    @apply bg-accent text-primary font-bold px-6 py-3 rounded-lg hover:bg-yellow-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-primary;
+    @apply bg-accent text-primary font-bold px-6 py-3 rounded-lg hover:bg-yellow-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-primary shadow-glow-gold hover:shadow-glow-gold hover:scale-[1.02] active:scale-[0.98];
   }
 
   .btn-secondary {
-    @apply border border-accent text-accent font-semibold px-6 py-3 rounded-lg hover:bg-accent hover:text-primary transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-primary;
+    @apply border border-accent text-accent font-semibold px-6 py-3 rounded-lg hover:bg-accent hover:text-primary transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-primary hover:scale-[1.02] active:scale-[0.98];
   }
 
   .card {
-    @apply bg-surface rounded-xl border border-muted/30 p-6 shadow-lg;
+    @apply bg-surface rounded-xl border border-white/10 p-6 shadow-lg;
   }
 
   .input {
@@ -68,12 +69,13 @@ body {
     @apply block text-sm font-medium text-gray-300 mb-1;
   }
 
+  /* Position badges */
   .badge-gk {
     @apply bg-yellow-500 text-black text-xs font-bold px-2 py-0.5 rounded;
   }
 
   .badge-def {
-    @apply bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded;
+    @apply bg-wc-blue text-white text-xs font-bold px-2 py-0.5 rounded;
   }
 
   .badge-mid {
@@ -81,7 +83,30 @@ body {
   }
 
   .badge-fwd {
-    @apply bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded;
+    @apply bg-wc-red text-white text-xs font-bold px-2 py-0.5 rounded;
+  }
+
+  /* World Cup accent stripe — thin coloured top border on cards */
+  .card-wc {
+    @apply card;
+    border-top: 2px solid;
+    border-image: linear-gradient(90deg, #003DA5, #F5B700, #E5001B) 1;
+  }
+
+  /* Shimmer text effect for special headings */
+  .text-shimmer {
+    background: linear-gradient(
+      90deg,
+      #F5B700 0%,
+      #fff 40%,
+      #F5B700 60%,
+      #F5B700 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 3s linear infinite;
   }
 }
 
@@ -106,5 +131,10 @@ body {
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background-color: var(--color-muted);
     border-radius: 3px;
+  }
+
+  /* World Cup flag stripe utility */
+  .border-wc {
+    border-image: linear-gradient(90deg, #003DA5, #F5B700, #E5001B) 1;
   }
 }
