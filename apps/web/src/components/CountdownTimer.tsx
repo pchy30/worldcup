@@ -44,10 +44,14 @@ export default function CountdownTimer({
     return () => clearInterval(interval);
   }, [deadline]);
 
-  const minutes = Math.floor(secondsLeft / 60);
+  const days = Math.floor(secondsLeft / 86400);
+  const hours = Math.floor((secondsLeft % 86400) / 3600);
+  const minutes = Math.floor((secondsLeft % 3600) / 60);
   const seconds = secondsLeft % 60;
-  const display = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  const isUrgent = secondsLeft <= 15;
+  const display = days > 0
+    ? `${days}d ${String(hours).padStart(2, "0")}h ${String(minutes).padStart(2, "0")}m`
+    : `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  const isUrgent = secondsLeft <= 15 && days === 0;
   const isExpired = secondsLeft === 0;
 
   return (
@@ -72,7 +76,7 @@ export default function CountdownTimer({
           isExpired ? "text-gray-500" : isUrgent ? "text-red-400" : "text-accent"
         }`}
       />
-      <span>{isExpired ? "00:00" : display}</span>
+      <span>{isExpired ? "00:00:00" : display}</span>
     </div>
   );
 }
