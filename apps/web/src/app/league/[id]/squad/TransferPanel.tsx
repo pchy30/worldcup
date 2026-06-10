@@ -15,6 +15,8 @@ interface TransferPanelProps {
   availablePlayers: Player[];
   windowId: string;
   windowClosesAt: string;
+  transfersUsed: number;
+  maxTransfers: number;
 }
 
 export default function TransferPanel({
@@ -22,8 +24,11 @@ export default function TransferPanel({
   mySquad,
   availablePlayers,
   windowClosesAt,
+  transfersUsed,
+  maxTransfers,
 }: TransferPanelProps) {
   const router = useRouter();
+  const transfersRemaining = maxTransfers - transfersUsed;
   const [playerOut, setPlayerOut] = useState<Player | null>(null);
   const [playerIn, setPlayerIn] = useState<Player | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -83,19 +88,40 @@ export default function TransferPanel({
 
   return (
     <div className="mb-10">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-          <ArrowRightLeft className="w-5 h-5 text-accent" />
-          Transfer Window
-        </h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div>
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <ArrowRightLeft className="w-5 h-5 text-accent" />
+            Transfer Window
+          </h2>
+          <div className="flex items-center gap-2 mt-1">
+            {Array.from({ length: maxTransfers }).map((_, i) => (
+              <div
+                key={i}
+                className={`w-2.5 h-2.5 rounded-full ${i < transfersUsed ? "bg-muted" : "bg-accent"}`}
+              />
+            ))}
+            <span className="text-xs text-muted ml-1">
+              {transfersRemaining === 0
+                ? "No transfers remaining"
+                : `${transfersRemaining} transfer${transfersRemaining !== 1 ? "s" : ""} remaining`}
+            </span>
+          </div>
+        </div>
         <div className="flex items-center gap-2 text-sm text-muted">
-          <span>Closes in:</span>
+          <span className="text-xs">Closes in:</span>
           <CountdownTimer
             deadline={windowClosesAt}
             onExpired={() => router.refresh()}
           />
         </div>
       </div>
+
+      {transfersRemaining === 0 && (
+        <div className="bg-muted/10 border border-muted/30 text-muted rounded-lg px-4 py-3 text-sm mb-4">
+          You have used all {maxTransfers} transfers for this window. Come back next window.
+        </div>
+      )}
 
       {success && (
         <div className="bg-green-900/30 border border-green-700/50 text-green-400 rounded-lg px-4 py-3 text-sm mb-4">
@@ -109,7 +135,7 @@ export default function TransferPanel({
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 lg:grid-cols-2 gap-6 ${transfersRemaining === 0 ? "opacity-50 pointer-events-none" : ""}`}>
         {/* Select player out */}
         <div className="card">
           <h3 className="text-sm font-semibold text-muted uppercase tracking-wider mb-3">

@@ -84,6 +84,18 @@ export default async function SquadPage({ params }: PageProps) {
     nextWindowOpensAt = nextWindow?.opens_at ?? null;
   }
 
+  // Count transfers used this window
+  let transfersUsed = 0;
+  if (openWindow) {
+    const { count } = await supabase
+      .from("transfers")
+      .select("id", { count: "exact", head: true })
+      .eq("league_id", id)
+      .eq("manager_id", user.id)
+      .eq("transfer_window_id", openWindow.id);
+    transfersUsed = count ?? 0;
+  }
+
   // All available (undrafted) players if window is open
   let availablePlayers: Player[] = [];
   if (openWindow) {
@@ -209,6 +221,8 @@ export default async function SquadPage({ params }: PageProps) {
           availablePlayers={availablePlayers}
           windowId={openWindow.id}
           windowClosesAt={openWindow.closes_at}
+          transfersUsed={transfersUsed}
+          maxTransfers={2}
         />
       )}
 
