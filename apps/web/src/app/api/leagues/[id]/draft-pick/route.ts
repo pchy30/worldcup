@@ -133,8 +133,13 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  // All checks pass — insert draft pick
-  const pickNumber = league.current_pick_index + 1;
+  // All checks pass — derive pick_number from actual count to avoid collisions
+  const { count: existingPickCount } = await supabase
+    .from("draft_picks")
+    .select("id", { count: "exact", head: true })
+    .eq("league_id", leagueId);
+
+  const pickNumber = (existingPickCount ?? 0) + 1;
 
   const { data: newPick, error: pickError } = await supabase
     .from("draft_picks")
