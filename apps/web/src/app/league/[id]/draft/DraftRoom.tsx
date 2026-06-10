@@ -193,6 +193,7 @@ export default function DraftRoom({
       }
       setConfirmModal(false);
       setSelectedPlayer(null);
+      router.refresh();
     } catch {
       setSubmitError("An unexpected error occurred.");
     } finally {
