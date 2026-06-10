@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 
 interface RouteContext {
   params: { id: string };
@@ -7,6 +7,7 @@ interface RouteContext {
 
 export async function POST(request: NextRequest, { params }: RouteContext) {
   const supabase = createClient();
+  const adminSupabase = createAdminClient();
   const { id: leagueId } = params;
 
   const {
@@ -181,7 +182,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       windowOpensAt.getTime() + 7 * 24 * 60 * 60 * 1000
     );
 
-    await supabase
+    await adminSupabase
       .from("leagues")
       .update({
         draft_status: "completed",
@@ -191,7 +192,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       .eq("id", leagueId);
 
     // Create first transfer window
-    await supabase.from("transfer_windows").insert({
+    await adminSupabase.from("transfer_windows").insert({
       league_id: leagueId,
       opens_at: windowOpensAt.toISOString(),
       closes_at: windowClosesAt.toISOString(),
@@ -208,13 +209,17 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       Date.now() + deadlineSeconds * 1000
     ).toISOString();
 
-    await supabase
+    const { error: advanceError } = await adminSupabase
       .from("leagues")
       .update({
         current_pick_index: nextPickIndex,
         current_pick_deadline: nextDeadline,
       })
       .eq("id", leagueId);
+
+    if (advanceError) {
+      console.error("Failed to advance pick index:", advanceError.message);
+    }
   }
 
   return NextResponse.json(newPick, { status: 201 });
