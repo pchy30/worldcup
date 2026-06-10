@@ -80,6 +80,21 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     );
   }
 
+  // 2b. Verify player_out is from an eliminated team
+  const { data: playerOut } = await supabase
+    .from("players")
+    .select("*, team:national_teams(is_eliminated, name)")
+    .eq("id", player_out_id)
+    .single();
+
+  const playerOutTeam = playerOut?.team as { is_eliminated: boolean; name: string } | null;
+  if (!playerOutTeam?.is_eliminated) {
+    return NextResponse.json(
+      { error: `You can only transfer out players from eliminated teams. ${playerOutTeam?.name ?? "This team"} has not been eliminated yet.` },
+      { status: 400 }
+    );
+  }
+
   // 3. Verify player_in is not in any squad in this league
   const { data: inSquadEntry } = await supabase
     .from("squad_players")

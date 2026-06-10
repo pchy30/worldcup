@@ -1,7 +1,6 @@
 // Supabase Edge Function — runs every 30 minutes via cron.
-// Fetches live World Cup 2026 player stats from football-data.org
-// and updates player goals/assists/clean_sheets/total_points,
-// then the DB trigger recalculates all affected manager points.
+// Fetches WC 2026 scorers + match results from football-data.org,
+// calculates goals/assists/clean_sheets, updates players and manager points.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -20,48 +19,79 @@ async function apiFetch(path: string) {
   return res.json();
 }
 
-function mapPosition(pos: string): string {
-  const map: Record<string, string> = {
-    Goalkeeper: "GK",
-    Defender: "DEF",
-    Midfielder: "MID",
-    Attacker: "FWD",
-    Offence: "FWD",
-    Defence: "DEF",
-    Midfield: "MID",
-  };
-  return map[pos] ?? "MID";
-}
-
 Deno.serve(async (_req) => {
   try {
-    // Fetch all WC 2026 scorers
+    // 1. Fetch scorers (goals + assists)
     const scorersData = await apiFetch("/competitions/WC/scorers?limit=100");
     const scorers = scorersData.scorers ?? [];
 
+    // Build map of playerId -> { goals, assists }
+    const statsMap = new Map<number, { goals: number; assists: number }>();
     for (const entry of scorers) {
-      const playerId = entry.player.id;
-      const goals = entry.goals ?? 0;
-      const assists = entry.assists ?? 0;
-      const position = mapPosition(entry.player.position ?? "");
+      statsMap.set(entry.player.id, {
+        goals: entry.goals ?? 0,
+        assists: entry.assists ?? 0,
+      });
+    }
 
-      const cleanSheetPoints = 0; // football-data.org free tier doesn't provide clean sheets
-      const totalPoints = goals * 4 + assists * 3 + cleanSheetPoints;
+    // 2. Fetch finished matches to calculate clean sheets
+    const matchesData = await apiFetch("/competitions/WC/matches?status=FINISHED");
+    const matches = matchesData.matches ?? [];
 
-      const { error } = await supabase
-        .from("players")
-        .update({ goals, assists, total_points: totalPoints })
-        .eq("api_football_id", playerId);
+    // Build map of api_football_id (team) -> clean sheet count
+    const cleanSheetMap = new Map<number, number>();
+    for (const match of matches) {
+      const homeGoals = match.score?.fullTime?.home ?? 0;
+      const awayGoals = match.score?.fullTime?.away ?? 0;
+      const homeTeamId = match.homeTeam?.id;
+      const awayTeamId = match.awayTeam?.id;
 
-      if (error) {
-        console.error(`Failed to update player ${playerId}:`, error.message);
+      if (awayGoals === 0 && homeTeamId) {
+        cleanSheetMap.set(homeTeamId, (cleanSheetMap.get(homeTeamId) ?? 0) + 1);
+      }
+      if (homeGoals === 0 && awayTeamId) {
+        cleanSheetMap.set(awayTeamId, (cleanSheetMap.get(awayTeamId) ?? 0) + 1);
       }
     }
 
-    return new Response(JSON.stringify({ ok: true, synced: scorers.length }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    // 3. Fetch all GK/DEF players with their team's api_football_id
+    const { data: players } = await supabase
+      .from("players")
+      .select("id, api_football_id, position, team:national_teams(api_football_id)")
+      .in("position", ["GK", "DEF"]);
+
+    // Update GK/DEF clean sheets
+    for (const player of players ?? []) {
+      const team = Array.isArray(player.team) ? player.team[0] : player.team;
+      const teamApiId = (team as { api_football_id: number } | null)?.api_football_id;
+      if (!teamApiId) continue;
+
+      const cleanSheets = cleanSheetMap.get(teamApiId) ?? 0;
+      const goals = statsMap.get(player.api_football_id)?.goals ?? 0;
+      const assists = statsMap.get(player.api_football_id)?.assists ?? 0;
+      const totalPoints = goals * 4 + assists * 3 + cleanSheets * 3;
+
+      await supabase
+        .from("players")
+        .update({ goals, assists, clean_sheets: cleanSheets, total_points: totalPoints })
+        .eq("id", player.id);
+
+      statsMap.delete(player.api_football_id);
+    }
+
+    // 4. Update remaining players (MID/FWD) from scorers map
+    for (const [apiId, stats] of statsMap.entries()) {
+      const totalPoints = stats.goals * 4 + stats.assists * 3;
+      await supabase
+        .from("players")
+        .update({ goals: stats.goals, assists: stats.assists, clean_sheets: 0, total_points: totalPoints })
+        .eq("api_football_id", apiId);
+    }
+
+    return new Response(
+      JSON.stringify({ ok: true, scorers: scorers.length, matches: matches.length }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
   } catch (e) {
     console.error(e);
     return new Response(JSON.stringify({ error: String(e) }), { status: 500 });
