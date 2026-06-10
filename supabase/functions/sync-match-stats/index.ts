@@ -88,8 +88,41 @@ Deno.serve(async (_req) => {
         .eq("api_football_id", apiId);
     }
 
+    // 5. Recalculate league_members totals from squad_players
+    const { data: squadRows } = await supabase
+      .from("squad_players")
+      .select("manager_id, league_id, player:players(total_points, goals, assists)");
+
+    // Aggregate per (manager_id, league_id)
+    const memberMap = new Map<string, { total_points: number; goals_scored: number; assists: number; highest: number }>();
+    for (const row of squadRows ?? []) {
+      const player = Array.isArray(row.player) ? row.player[0] : row.player;
+      if (!player) continue;
+      const key = `${row.manager_id}::${row.league_id}`;
+      const existing = memberMap.get(key) ?? { total_points: 0, goals_scored: 0, assists: 0, highest: 0 };
+      existing.total_points += player.total_points ?? 0;
+      existing.goals_scored += player.goals ?? 0;
+      existing.assists += player.assists ?? 0;
+      existing.highest = Math.max(existing.highest, player.total_points ?? 0);
+      memberMap.set(key, existing);
+    }
+
+    for (const [key, totals] of memberMap.entries()) {
+      const [manager_id, league_id] = key.split("::");
+      await supabase
+        .from("league_members")
+        .update({
+          total_points: totals.total_points,
+          goals_scored: totals.goals_scored,
+          assists: totals.assists,
+          highest_individual_player_points: totals.highest,
+        })
+        .eq("user_id", manager_id)
+        .eq("league_id", league_id);
+    }
+
     return new Response(
-      JSON.stringify({ ok: true, scorers: scorers.length, matches: matches.length }),
+      JSON.stringify({ ok: true, scorers: scorers.length, matches: matches.length, managers_updated: memberMap.size }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (e) {
