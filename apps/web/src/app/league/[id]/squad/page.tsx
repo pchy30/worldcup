@@ -4,7 +4,8 @@ import type { League, Player, SquadPlayer, Transfer } from "@wcf/shared";
 import PlayerCard from "@/components/PlayerCard";
 import PositionBadge from "@/components/PositionBadge";
 import TransferPanel from "./TransferPanel";
-import { Target, Zap, Shield, ArrowRightLeft } from "lucide-react";
+import NextWindowCard from "./NextWindowCard";
+import { Target, Zap, Shield } from "lucide-react";
 
 interface PageProps {
   params: { id: string };
@@ -67,6 +68,21 @@ export default async function SquadPage({ params }: PageProps) {
     .eq("league_id", id)
     .eq("manager_id", user.id)
     .order("confirmed_at", { ascending: false });
+
+  // Fetch next upcoming window if none is open
+  let nextWindowOpensAt: string | null = null;
+  if (!openWindow) {
+    const { data: nextWindow } = await supabase
+      .from("transfer_windows")
+      .select("opens_at")
+      .eq("league_id", id)
+      .eq("status", "closed")
+      .gt("opens_at", now)
+      .order("opens_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    nextWindowOpensAt = nextWindow?.opens_at ?? null;
+  }
 
   // All available (undrafted) players if window is open
   let availablePlayers: Player[] = [];
@@ -197,14 +213,7 @@ export default async function SquadPage({ params }: PageProps) {
       )}
 
       {!openWindow && (
-        <div className="card mb-8">
-          <div className="flex items-center gap-3 text-muted">
-            <ArrowRightLeft className="w-5 h-5" />
-            <p className="text-sm">
-              No transfer window is currently open. Check back when the next window opens.
-            </p>
-          </div>
-        </div>
+        <NextWindowCard opensAt={nextWindowOpensAt} />
       )}
 
       {/* Transfer history */}
