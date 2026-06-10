@@ -374,7 +374,7 @@ export default function DraftRoom({
           </div>
 
           {/* My Squad — pitch view */}
-          <div className="flex-shrink-0 flex flex-col" style={{ height: "280px" }}>
+          <div className="flex-shrink-0 flex flex-col" style={{ height: "320px" }}>
             <div className="px-4 py-2 border-b border-muted/20 flex items-center justify-between flex-shrink-0">
               <h2 className="text-sm font-semibold text-muted uppercase tracking-wider">
                 My Squad
@@ -415,7 +415,7 @@ export default function DraftRoom({
                     <p className="text-white/40 text-xs">No players yet</p>
                   </div>
                 ) : (
-                  <div className="relative z-10 flex flex-col justify-around h-full py-2">
+                  <div className="relative z-10 flex flex-col justify-around h-full py-4">
                     {(["FWD", "MID", "DEF", "GK"] as const).map((pos) => {
                       const posPlayers = squadByPosition[pos];
                       if (posPlayers.length === 0) return null;
@@ -463,6 +463,29 @@ export default function DraftRoom({
               </div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Mobile squad bar — shown only on small screens */}
+      <div className="md:hidden flex-shrink-0 border-t border-muted/20 overflow-x-auto">
+        <div className="flex items-center gap-1 px-3 py-2 min-w-max">
+          <span className="text-xs text-muted font-semibold mr-2 whitespace-nowrap">
+            Squad {mySquad.length}/7:
+          </span>
+          {(["FWD", "MID", "DEF", "GK"] as const).map((pos) =>
+            squadByPosition[pos].map((p) => (
+              <div key={p.id} className="flex flex-col items-center gap-0.5 mx-1">
+                <div className="w-7 h-7 rounded-full bg-surface border border-accent/60 flex items-center justify-center text-white font-bold text-xs">
+                  {p.name.split(" ").pop()?.charAt(0).toUpperCase()}
+                </div>
+                <span className="text-[8px] text-white/70 whitespace-nowrap">{p.name.split(" ").pop()}</span>
+                <span className="text-[8px] font-bold text-accent">{p.position}</span>
+              </div>
+            ))
+          )}
+          {mySquad.length === 0 && (
+            <span className="text-xs text-muted">No players yet</span>
+          )}
         </div>
       </div>
 
