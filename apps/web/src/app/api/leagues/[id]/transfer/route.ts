@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 interface RouteContext {
   params: { id: string };
@@ -7,7 +7,6 @@ interface RouteContext {
 
 export async function POST(request: NextRequest, { params }: RouteContext) {
   const supabase = createClient();
-  const adminSupabase = createAdminClient();
   const { id: leagueId } = params;
 
   const {
@@ -176,11 +175,13 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  // Add player_in to squad
+  // Add player_in to squad with their current points as baseline
+  // so only points scored after this transfer count for the manager
   const { error: addError } = await supabase.from("squad_players").insert({
     league_id: leagueId,
     manager_id: user.id,
     player_id: player_in_id,
+    baseline_points: playerIn.total_points ?? 0,
   });
 
   if (addError) {
@@ -210,43 +211,6 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   if (transferRecordError) {
     console.error("Transfer record insert error:", transferRecordError.message);
     // Transfer still happened; non-fatal
-  }
-
-  // Recalculate manager points from their updated squad
-  try {
-    const { data: squadPlayers } = await supabase
-      .from("squad_players")
-      .select("player:players(total_points, goals, assists)")
-      .eq("league_id", leagueId)
-      .eq("manager_id", user.id);
-
-    let totalPoints = 0;
-    let goalsScored = 0;
-    let assists = 0;
-    let highest = 0;
-
-    for (const row of squadPlayers ?? []) {
-      const p = Array.isArray(row.player) ? row.player[0] : row.player;
-      if (!p) continue;
-      totalPoints += p.total_points ?? 0;
-      goalsScored += p.goals ?? 0;
-      assists += p.assists ?? 0;
-      highest = Math.max(highest, p.total_points ?? 0);
-    }
-
-    await adminSupabase
-      .from("league_members")
-      .update({
-        total_points: totalPoints,
-        goals_scored: goalsScored,
-        assists,
-        highest_individual_player_points: highest,
-      })
-      .eq("league_id", leagueId)
-      .eq("user_id", user.id);
-  } catch (err) {
-    console.error("Failed to recalculate manager points after transfer:", err);
-    // Non-fatal — cron will correct it within 30 mins
   }
 
   // Return updated squad

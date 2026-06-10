@@ -89,9 +89,10 @@ Deno.serve(async (_req) => {
     }
 
     // 5. Recalculate league_members totals from squad_players
+    // Only count points scored after the player joined the squad (baseline_points)
     const { data: squadRows } = await supabase
       .from("squad_players")
-      .select("manager_id, league_id, player:players(total_points, goals, assists)");
+      .select("manager_id, league_id, baseline_points, player:players(total_points, goals, assists)");
 
     // Aggregate per (manager_id, league_id)
     const memberMap = new Map<string, { total_points: number; goals_scored: number; assists: number; highest: number }>();
@@ -100,10 +101,11 @@ Deno.serve(async (_req) => {
       if (!player) continue;
       const key = `${row.manager_id}::${row.league_id}`;
       const existing = memberMap.get(key) ?? { total_points: 0, goals_scored: 0, assists: 0, highest: 0 };
-      existing.total_points += player.total_points ?? 0;
+      const earnedPoints = Math.max(0, (player.total_points ?? 0) - (row.baseline_points ?? 0));
+      existing.total_points += earnedPoints;
       existing.goals_scored += player.goals ?? 0;
       existing.assists += player.assists ?? 0;
-      existing.highest = Math.max(existing.highest, player.total_points ?? 0);
+      existing.highest = Math.max(existing.highest, earnedPoints);
       memberMap.set(key, existing);
     }
 
