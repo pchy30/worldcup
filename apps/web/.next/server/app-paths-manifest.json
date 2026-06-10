@@ -1,0 +1,4 @@
+{
+  "/league/[id]/lobby/page": "app/league/[id]/lobby/page.js",
+  "/dashboard/page": "app/dashboard/page.js"
+}
