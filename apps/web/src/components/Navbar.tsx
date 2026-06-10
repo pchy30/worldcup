@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Trophy, LayoutDashboard, Users } from "lucide-react";
+import { Trophy, LayoutDashboard, HelpCircle } from "lucide-react";
 import NavbarLogout from "./NavbarLogout";
 import MobileMenuClient from "./MobileMenuClient";
 
@@ -38,8 +38,8 @@ export default async function Navbar() {
           </Link>
 
           {/* Centre nav — desktop only */}
-          {user && (
-            <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-1">
+            {user && (
               <Link
                 href="/dashboard"
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-primary/60 transition-colors duration-200 text-sm font-medium"
@@ -47,15 +47,15 @@ export default async function Navbar() {
                 <LayoutDashboard className="w-4 h-4" />
                 Dashboard
               </Link>
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-primary/60 transition-colors duration-200 text-sm font-medium"
-              >
-                <Users className="w-4 h-4" />
-                My Squads
-              </Link>
-            </div>
-          )}
+            )}
+            <Link
+              href="/how-to-play"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-primary/60 transition-colors duration-200 text-sm font-medium"
+            >
+              <HelpCircle className="w-4 h-4" />
+              How to Play
+            </Link>
+          </div>
 
           {/* Right side */}
           <div className="flex items-center gap-2">
@@ -74,6 +74,12 @@ export default async function Navbar() {
               </>
             ) : (
               <div className="flex items-center gap-2">
+                <Link
+                  href="/how-to-play"
+                  className="hidden sm:block text-sm text-gray-300 hover:text-white px-3 py-2 rounded-lg hover:bg-primary/60 transition-colors duration-200 font-medium"
+                >
+                  How to Play
+                </Link>
                 <Link
                   href="/login"
                   className="text-sm text-gray-300 hover:text-white px-3 py-2 rounded-lg hover:bg-primary/60 transition-colors duration-200 font-medium"

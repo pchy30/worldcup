@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Trophy, Zap, BarChart2, RefreshCcw, ArrowRight } from "lucide-react";
+import { Trophy, Zap, BarChart2, RefreshCcw, ArrowRight, HelpCircle } from "lucide-react";
 
 const features = [
   {
@@ -79,6 +79,15 @@ export default function HomePage() {
               className="btn-secondary flex items-center gap-2 text-base w-full sm:w-auto justify-center"
             >
               Join a League
+            </Link>
+          </div>
+          <div className="mt-5">
+            <Link
+              href="/how-to-play"
+              className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-accent transition-colors duration-200"
+            >
+              <HelpCircle className="w-4 h-4" />
+              How does it work?
             </Link>
           </div>
         </div>
