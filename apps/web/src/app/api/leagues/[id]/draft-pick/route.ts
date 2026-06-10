@@ -48,8 +48,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   }
 
   // 1. Verify it's this user's turn
-  const currentPickerUserId =
-    league.draft_order?.[league.current_pick_index] ?? null;
+  const draftOrder = league.draft_order ?? [];
+  const currentPickerUserId = draftOrder.length > 0
+    ? draftOrder[league.current_pick_index % draftOrder.length]
+    : null;
 
   if (currentPickerUserId !== user.id) {
     return NextResponse.json(

@@ -60,8 +60,10 @@ export default function DraftRoom({
   );
 
   // Who's picking now
-  const currentPickerUserId =
-    currentLeague.draft_order?.[currentLeague.current_pick_index] ?? null;
+  const draftOrder = currentLeague.draft_order ?? [];
+  const currentPickerUserId = draftOrder.length > 0
+    ? draftOrder[currentLeague.current_pick_index % draftOrder.length]
+    : null;
   const isMyTurn = currentPickerUserId === currentUserId;
 
   const currentPickerMember = members.find(
