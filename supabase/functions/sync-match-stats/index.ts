@@ -88,6 +88,57 @@ Deno.serve(async (_req) => {
         .eq("api_football_id", apiId);
     }
 
+    // 5a. Calculate national team bonus points per manager per league
+    // Win = +3, Draw = +1 for each team the manager picked
+    const { data: allManagerTeams } = await supabase
+      .from("manager_national_teams")
+      .select("manager_id, league_id, team_id");
+
+    // Build map of team api_football_id -> {wins, draws}
+    const teamResultMap = new Map<number, { wins: number; draws: number }>();
+    for (const match of matches) {
+      const homeGoals = match.score?.fullTime?.home ?? 0;
+      const awayGoals = match.score?.fullTime?.away ?? 0;
+      const homeTeamId = match.homeTeam?.id;
+      const awayTeamId = match.awayTeam?.id;
+      if (!homeTeamId || !awayTeamId) continue;
+
+      if (homeGoals > awayGoals) {
+        const prev = teamResultMap.get(homeTeamId) ?? { wins: 0, draws: 0 };
+        teamResultMap.set(homeTeamId, { ...prev, wins: prev.wins + 1 });
+      } else if (awayGoals > homeGoals) {
+        const prev = teamResultMap.get(awayTeamId) ?? { wins: 0, draws: 0 };
+        teamResultMap.set(awayTeamId, { ...prev, wins: prev.wins + 1 });
+      } else {
+        const prevH = teamResultMap.get(homeTeamId) ?? { wins: 0, draws: 0 };
+        teamResultMap.set(homeTeamId, { ...prevH, draws: prevH.draws + 1 });
+        const prevA = teamResultMap.get(awayTeamId) ?? { wins: 0, draws: 0 };
+        teamResultMap.set(awayTeamId, { ...prevA, draws: prevA.draws + 1 });
+      }
+    }
+
+    // Fetch national_teams api_football_id map
+    const { data: allNationalTeams } = await supabase
+      .from("national_teams")
+      .select("id, api_football_id");
+
+    const teamApiIdMap = new Map<string, number>();
+    for (const t of allNationalTeams ?? []) {
+      if (t.api_football_id) teamApiIdMap.set(t.id, t.api_football_id);
+    }
+
+    // Build bonus per (manager_id, league_id)
+    const bonusMap = new Map<string, number>();
+    for (const row of allManagerTeams ?? []) {
+      const apiId = teamApiIdMap.get(row.team_id);
+      if (!apiId) continue;
+      const result = teamResultMap.get(apiId);
+      if (!result) continue;
+      const bonus = result.wins * 3 + result.draws * 1;
+      const key = `${row.manager_id}::${row.league_id}`;
+      bonusMap.set(key, (bonusMap.get(key) ?? 0) + bonus);
+    }
+
     // 5. Recalculate league_members totals from squad_players
     // Only count points scored after the player joined the squad (baseline_points)
     const { data: squadRows } = await supabase
@@ -111,10 +162,12 @@ Deno.serve(async (_req) => {
 
     for (const [key, totals] of memberMap.entries()) {
       const [manager_id, league_id] = key.split("::");
+      const bonus = bonusMap.get(key) ?? 0;
       await supabase
         .from("league_members")
         .update({
-          total_points: totals.total_points,
+          total_points: totals.total_points + bonus,
+          bonus_points: bonus,
           goals_scored: totals.goals_scored,
           assists: totals.assists,
           highest_individual_player_points: totals.highest,

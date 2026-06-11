@@ -85,7 +85,7 @@ export default function LobbyClient({
         (payload) => {
           const updated = payload.new as League;
           if (updated.draft_status === "active") {
-            router.push(`/league/${league.id}/draft`);
+            router.push(`/league/${league.id}/team-pick`);
           }
         }
       )
@@ -111,7 +111,7 @@ export default function LobbyClient({
         return;
       }
 
-      router.push(`/league/${league.id}/draft`);
+      router.push(`/league/${league.id}/team-pick`);
     } catch {
       setStartError("An unexpected error occurred.");
     } finally {

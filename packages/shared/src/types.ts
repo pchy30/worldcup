@@ -19,6 +19,8 @@ export interface League {
   current_pick_deadline: string | null; // ISO timestamp
   max_participants: number;
   created_at: string;
+  team_pick_index: number;       // how many national team picks have been made
+  team_pick_offers: string[];    // UUID[] of teams currently on offer
 }
 
 export interface LeagueMember {
@@ -29,6 +31,7 @@ export interface LeagueMember {
   total_points: number;
   goals_scored: number;
   assists: number;
+  bonus_points: number;
   joined_at: string;
 }
 

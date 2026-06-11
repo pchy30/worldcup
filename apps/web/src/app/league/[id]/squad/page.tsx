@@ -5,7 +5,7 @@ import PlayerCard from "@/components/PlayerCard";
 import PositionBadge from "@/components/PositionBadge";
 import TransferPanel from "./TransferPanel";
 import NextWindowCard from "./NextWindowCard";
-import { Target, Zap, Shield } from "lucide-react";
+import { Target, Zap, Shield, Star } from "lucide-react";
 
 interface PageProps {
   params: { id: string };
@@ -47,6 +47,14 @@ export default async function SquadPage({ params }: PageProps) {
   const mySquad = ((squadRows as SquadPlayer[]) ?? []).map(
     (r) => r.player as Player
   ).filter(Boolean);
+
+  // Fetch my picked national teams (bonus teams)
+  const { data: myBonusTeams } = await supabase
+    .from("manager_national_teams")
+    .select("round, team:national_teams(id, name, flag_url, code)")
+    .eq("league_id", id)
+    .eq("manager_id", user.id)
+    .order("round", { ascending: true });
 
   // Check for open transfer window
   const now = new Date().toISOString();
@@ -131,6 +139,34 @@ export default async function SquadPage({ params }: PageProps) {
           <p className="text-xs text-muted uppercase tracking-wider">Total Points</p>
         </div>
       </div>
+
+      {/* Bonus national teams */}
+      {myBonusTeams && myBonusTeams.length > 0 && (
+        <div className="card mb-8">
+          <div className="flex items-center gap-2 mb-3">
+            <Star className="w-4 h-4 text-accent" />
+            <h2 className="text-sm font-semibold text-muted uppercase tracking-wider">Your Bonus Teams</h2>
+            <span className="text-xs text-muted ml-1">Win +3 pts · Draw +1 pt</span>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {myBonusTeams.map((pick, i) => {
+              const team = Array.isArray(pick.team) ? pick.team[0] : pick.team;
+              if (!team) return null;
+              return (
+                <div key={i} className="flex items-center gap-2 bg-primary/60 border border-muted/20 rounded-lg px-3 py-2">
+                  {team.flag_url ? (
+                    <img src={team.flag_url} alt={team.code} className="w-7 h-5 object-cover rounded" />
+                  ) : (
+                    <span className="text-xs text-muted font-bold">{team.code}</span>
+                  )}
+                  <span className="text-sm text-white font-medium">{team.name}</span>
+                  <span className="text-xs text-muted">R{pick.round}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Pitch view */}
       <div className="mb-10">

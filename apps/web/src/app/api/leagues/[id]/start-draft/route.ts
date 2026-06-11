@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
+
+const POOL_TEAMS = [
+  "Argentina", "Netherlands", "Spain", "Croatia", "France", "Brazil",
+  "USA", "Portugal", "England", "Germany", "Turkey", "Morocco",
+  "Japan", "Senegal", "Ivory Coast", "Norway", "Mexico", "Uruguay",
+  "Colombia", "Ecuador", "Scotland", "South Korea", "Belgium",
+  "Saudi Arabia", "Egypt",
+];
 
 interface RouteContext {
   params: { id: string };
@@ -16,6 +24,7 @@ function shuffle<T>(arr: T[]): T[] {
 
 export async function POST(request: NextRequest, { params }: RouteContext) {
   const supabase = createClient();
+  const adminSupabase = createAdminClient();
   const { id: leagueId } = params;
 
   const {
@@ -76,23 +85,29 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   // Shuffle draft order
   const draftOrder = shuffle(members.map((m) => m.user_id));
 
-  // Calculate first pick deadline
-  const now = new Date();
-  const deadlineSeconds =
-    league.draft_mode === "live"
-      ? league.pick_time_limit_seconds
-      : league.slow_draft_hours * 3600;
+  // Fetch pool teams from DB so we have their UUIDs
+  const { data: poolRows } = await adminSupabase
+    .from("national_teams")
+    .select("id, name")
+    .in("name", POOL_TEAMS);
 
-  const firstDeadline = new Date(now.getTime() + deadlineSeconds * 1000);
+  const poolTeams = poolRows ?? [];
 
-  // Update league
-  const { data: updatedLeague, error: updateError } = await supabase
+  // Draw 4 random teams for the first picker's offer
+  const shuffledPool = shuffle(poolTeams.map((t: { id: string }) => t.id));
+  const firstOffers = shuffledPool.slice(0, 4);
+
+  // Mark league as active — team_pick_index starts at 0 (team picking phase)
+  // current_pick_deadline is NOT set yet; it will be set when team picking completes
+  const { data: updatedLeague, error: updateError } = await adminSupabase
     .from("leagues")
     .update({
       draft_status: "active",
       draft_order: draftOrder,
+      team_pick_index: 0,
+      team_pick_offers: firstOffers,
       current_pick_index: 0,
-      current_pick_deadline: firstDeadline.toISOString(),
+      current_pick_deadline: null,
     })
     .eq("id", leagueId)
     .select()
@@ -105,5 +120,5 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  return NextResponse.json(updatedLeague, { status: 200 });
+  return NextResponse.json({ ...updatedLeague, phase: "team_picking" }, { status: 200 });
 }
