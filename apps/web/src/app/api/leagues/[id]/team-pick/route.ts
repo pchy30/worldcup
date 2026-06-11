@@ -57,8 +57,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
   const { team_id } = body;
 
-  // Fetch league
-  const { data: league } = await supabase
+  // Fetch league with admin client to avoid any RLS/auth issues on read
+  const { data: league } = await adminSupabase
     .from("leagues")
     .select("*")
     .eq("id", leagueId)
@@ -88,6 +88,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       : draftOrder[draftOrder.length - 1 - positionInRound];
 
   if (currentPickerId !== user.id) {
+    console.error(`Turn mismatch: currentPickerId=${currentPickerId} user.id=${user.id} teamPickIndex=${teamPickIndex} draftOrder=${JSON.stringify(draftOrder)}`);
     return NextResponse.json({ error: "It is not your turn to pick a team." }, { status: 403 });
   }
 
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   const poolTeams = poolRows ?? [];
 
   // Already picked teams in this league (across all rounds)
-  const { data: existingPicks } = await supabase
+  const { data: existingPicks } = await adminSupabase
     .from("manager_national_teams")
     .select("team_id")
     .eq("league_id", leagueId);
