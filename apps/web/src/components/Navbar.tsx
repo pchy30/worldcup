@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Trophy, LayoutDashboard, HelpCircle } from "lucide-react";
+import { Trophy, LayoutDashboard, HelpCircle, BarChart2 } from "lucide-react";
 import NavbarLogout from "./NavbarLogout";
 import MobileMenuClient from "./MobileMenuClient";
 
@@ -50,6 +50,13 @@ export default async function Navbar() {
                 Dashboard
               </Link>
             )}
+            <Link
+              href="/players"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-primary/60 transition-colors duration-200 text-sm font-medium"
+            >
+              <BarChart2 className="w-4 h-4" />
+              Players
+            </Link>
             <Link
               href="/how-to-play"
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-primary/60 transition-colors duration-200 text-sm font-medium"

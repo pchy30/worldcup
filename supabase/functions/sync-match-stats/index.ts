@@ -123,6 +123,23 @@ Deno.serve(async (_req) => {
         .eq("league_id", league_id);
     }
 
+    // 6. Snapshot all player points for today (upsert so only one row per player per day)
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: allPlayers } = await supabase
+      .from("players")
+      .select("id, total_points");
+
+    if (allPlayers && allPlayers.length > 0) {
+      const snapshots = allPlayers.map((p: { id: string; total_points: number }) => ({
+        player_id: p.id,
+        snapshot_date: today,
+        total_points: p.total_points,
+      }));
+      await supabase
+        .from("player_point_snapshots")
+        .upsert(snapshots, { onConflict: "player_id,snapshot_date" });
+    }
+
     return new Response(
       JSON.stringify({ ok: true, scorers: scorers.length, matches: matches.length, managers_updated: memberMap.size }),
       { status: 200, headers: { "Content-Type": "application/json" } }
