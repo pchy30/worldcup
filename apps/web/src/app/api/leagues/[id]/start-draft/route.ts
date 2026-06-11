@@ -3,7 +3,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 
 const POOL_TEAMS = [
   "Argentina", "Netherlands", "Spain", "Croatia", "France", "Brazil",
-  "USA", "Portugal", "England", "Germany", "Turkey", "Morocco",
+  "United States", "Portugal", "England", "Germany", "Turkey", "Morocco",
   "Japan", "Senegal", "Ivory Coast", "Norway", "Mexico", "Uruguay",
   "Colombia", "Ecuador", "Scotland", "South Korea", "Belgium",
   "Saudi Arabia", "Egypt",
