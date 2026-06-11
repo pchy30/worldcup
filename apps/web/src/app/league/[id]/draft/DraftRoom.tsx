@@ -195,7 +195,7 @@ export default function DraftRoom({
       }
       setConfirmModal(false);
       setSelectedPlayer(null);
-      router.refresh();
+      // Realtime subscription handles state update — no router.refresh() needed
     } catch {
       setSubmitError("An unexpected error occurred.");
     } finally {

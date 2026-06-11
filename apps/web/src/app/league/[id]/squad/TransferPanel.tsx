@@ -21,13 +21,16 @@ interface TransferPanelProps {
 
 export default function TransferPanel({
   leagueId,
-  mySquad,
-  availablePlayers,
+  mySquad: initialSquad,
+  availablePlayers: initialAvailable,
   windowClosesAt,
-  transfersUsed,
+  transfersUsed: initialTransfersUsed,
   maxTransfers,
 }: TransferPanelProps) {
   const router = useRouter();
+  const [squad, setSquad] = useState<Player[]>(initialSquad);
+  const [available, setAvailable] = useState<Player[]>(initialAvailable);
+  const [transfersUsed, setTransfersUsed] = useState(initialTransfersUsed);
   const transfersRemaining = maxTransfers - transfersUsed;
   const [playerOut, setPlayerOut] = useState<Player | null>(null);
   const [playerIn, setPlayerIn] = useState<Player | null>(null);
@@ -38,7 +41,7 @@ export default function TransferPanel({
   const [success, setSuccess] = useState(false);
 
   const filteredAvailable = useMemo(() => {
-    let list = availablePlayers;
+    let list = available;
     if (positionFilter !== "ALL") {
       list = list.filter((p) => p.position === positionFilter);
     }
@@ -47,7 +50,7 @@ export default function TransferPanel({
       list = list.filter((p) => p.name.toLowerCase().includes(q));
     }
     return list;
-  }, [availablePlayers, positionFilter, searchQuery]);
+  }, [available, positionFilter, searchQuery]);
 
   const handleSubmit = async () => {
     if (!playerOut || !playerIn) {
@@ -75,10 +78,23 @@ export default function TransferPanel({
         return;
       }
 
+      // Update squad and available lists locally — no full page refresh needed
+      setSquad((prev) => {
+        const next = prev.filter((p) => p.id !== playerOut!.id);
+        // player_in comes back in data.squad with full player details
+        const newPlayer = (data.squad ?? [])
+          .map((r: { player: Player }) => r.player)
+          .find((p: Player) => p.id === playerIn!.id);
+        return newPlayer ? [...next, newPlayer] : next;
+      });
+      setAvailable((prev) => [
+        ...prev.filter((p) => p.id !== playerIn!.id),
+        playerOut!,
+      ]);
+      setTransfersUsed((n) => n + 1);
       setSuccess(true);
       setPlayerOut(null);
       setPlayerIn(null);
-      router.refresh();
     } catch {
       setError("An unexpected error occurred.");
     } finally {
@@ -142,7 +158,7 @@ export default function TransferPanel({
             Transfer Out
           </h3>
           <div className="space-y-2">
-            {mySquad.map((player) => (
+            {squad.map((player) => (
               <PlayerCard
                 key={player.id}
                 player={player}
