@@ -37,6 +37,12 @@ export default async function DraftPage({ params }: PageProps) {
     redirect(`/league/${id}/leaderboard`);
   }
 
+  // If team picking isn't finished yet, send everyone to that phase first
+  const totalTeamPicks = (league.draft_order?.length ?? 0) * 2;
+  if ((league.team_pick_index ?? 0) < totalTeamPicks) {
+    redirect(`/league/${id}/team-pick`);
+  }
+
   // Verify membership
   const { data: membership } = await supabase
     .from("league_members")
