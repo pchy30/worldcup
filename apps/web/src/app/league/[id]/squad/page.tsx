@@ -170,7 +170,7 @@ export default async function SquadPage({ params }: PageProps) {
 
       {/* Pitch view */}
       <div className="mb-10">
-        <h2 className="text-lg font-bold text-white mb-4">Squad ({mySquad.length}/7)</h2>
+        <h2 className="text-lg font-bold text-white mb-4">Squad ({mySquad.length}/11)</h2>
         {mySquad.length === 0 ? (
           <div className="card text-center py-12">
             <p className="text-muted">Your squad is empty. Something may have gone wrong.</p>

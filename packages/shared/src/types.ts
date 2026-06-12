@@ -197,8 +197,8 @@ export function validateDraftPick(
     return { valid: false, reason: "This player has already been drafted." };
   }
 
-  if (currentManagerSquad.length >= 7) {
-    return { valid: false, reason: "Your squad is already full (7 players)." };
+  if (currentManagerSquad.length >= 11) {
+    return { valid: false, reason: "Your squad is already full (11 players)." };
   }
 
   return { valid: true };

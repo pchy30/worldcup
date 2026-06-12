@@ -107,19 +107,41 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
   const mySquadCount = mySquad?.length ?? 0;
 
-  if (mySquadCount >= 7) {
+  if (mySquadCount >= 11) {
     return NextResponse.json(
-      { error: "Your squad is already full (7 players)." },
+      { error: "Your squad is already full (11 players)." },
       { status: 400 }
     );
   }
 
-  // 6. Max 2 players per national team
+  // 6. Position limits: 1 GK, 4 DEF, 3 MID, 3 FWD
+  const POSITION_LIMITS: Record<string, number> = { GK: 1, DEF: 4, MID: 3, FWD: 3 };
+
+  // Need player positions in squad — re-fetch with position
+  const { data: mySquadWithPos } = await supabase
+    .from("squad_players")
+    .select("player_id, player:players(team_id, position)")
+    .eq("league_id", leagueId)
+    .eq("manager_id", user.id);
+
+  const positionCounts: Record<string, number> = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
   const teamCounts: Record<string, number> = {};
-  for (const sp of mySquad ?? []) {
+  for (const sp of mySquadWithPos ?? []) {
     const p = Array.isArray(sp.player) ? sp.player[0] : sp.player;
-    const teamId = (p as { team_id: string } | null)?.team_id ?? "";
+    if (!p) continue;
+    const pos = (p as { position: string }).position;
+    positionCounts[pos] = (positionCounts[pos] ?? 0) + 1;
+    const teamId = (p as { team_id: string }).team_id ?? "";
     teamCounts[teamId] = (teamCounts[teamId] ?? 0) + 1;
+  }
+
+  const positionLimit = POSITION_LIMITS[player.position] ?? 99;
+  const currentPosCount = positionCounts[player.position] ?? 0;
+  if (currentPosCount >= positionLimit) {
+    return NextResponse.json(
+      { error: `You already have the maximum ${positionLimit} ${player.position} player${positionLimit !== 1 ? "s" : ""} in your squad.` },
+      { status: 400 }
+    );
   }
 
   const newTeamCount = (teamCounts[player.team_id] ?? 0) + 1;
@@ -169,7 +191,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
   // Advance pick index
   const nextPickIndex = league.current_pick_index + 1;
-  const totalPicks = (league.draft_order?.length ?? 0) * 7;
+  const totalPicks = (league.draft_order?.length ?? 0) * 11;
 
   if (nextPickIndex >= totalPicks) {
     // Draft complete

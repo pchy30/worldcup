@@ -28,9 +28,9 @@ const steps = [
   {
     number: "02",
     icon: Zap,
-    title: "Draft your 7-player squad",
+    title: "Draft your 11-player squad",
     description:
-      "The commissioner kicks off the draft. Picks go in snake order — 1→2→3→…→3→2→1→repeat — so it's fair. Each manager picks 7 players total from any World Cup nation.",
+      "The commissioner kicks off the draft. Picks go in snake order — 1→2→3→…→3→2→1→repeat — so it's fair. Each manager picks 11 players total: 1 GK, 4 DEF, 3 MID, 3 FWD.",
     color: "text-blue-400",
     bg: "bg-blue-400/10",
     border: "border-blue-400/20",
@@ -188,7 +188,7 @@ export default function HowToPlayPage() {
         <div className="card space-y-3">
           <div className="flex items-start gap-3">
             <Users className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-gray-300">Each manager drafts exactly <span className="text-white font-semibold">7 players</span>.</p>
+            <p className="text-sm text-gray-300">Each manager drafts exactly <span className="text-white font-semibold">11 players</span> — 1 GK, 4 DEF, 3 MID, 3 FWD.</p>
           </div>
           <div className="flex items-start gap-3">
             <UserPlus className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />

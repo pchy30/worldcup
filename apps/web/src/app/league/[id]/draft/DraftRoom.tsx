@@ -213,7 +213,7 @@ export default function DraftRoom({
           </h1>
           <p className="text-xs text-muted">
             Pick {Math.min(currentLeague.current_pick_index + 1, picks.length + 1)} of{" "}
-            {members.length * 7}
+            {members.length * 11}
           </p>
         </div>
 
@@ -260,7 +260,7 @@ export default function DraftRoom({
               {tab === "history" && <History className="w-3.5 h-3.5" />}
               {tab === "squad" && <Users className="w-3.5 h-3.5" />}
               <span className="capitalize">
-                {tab === "squad" ? `Squad ${mySquad.length}/7` : tab}
+                {tab === "squad" ? `Squad ${mySquad.length}/11` : tab}
               </span>
             </button>
           ))}
@@ -402,26 +402,40 @@ export default function DraftRoom({
 
           {/* My Squad — pitch/list view */}
           <div className={`flex-col md:flex-shrink-0 md:flex ${mobileTab === "squad" ? "flex flex-1" : "hidden"}`} style={{ height: undefined }}>
-            <div className="px-4 py-2 border-b border-muted/20 flex items-center justify-between flex-shrink-0">
-              <h2 className="text-sm font-semibold text-muted uppercase tracking-wider">
-                My Squad
-              </h2>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-accent font-bold">{mySquad.length}/7</span>
-                <div className="flex rounded-md overflow-hidden border border-muted/30">
-                  <button
-                    onClick={() => setSquadView("pitch")}
-                    className={`p-1 ${squadView === "pitch" ? "bg-accent text-primary" : "text-muted hover:text-white"}`}
-                  >
-                    <LayoutGrid className="w-3 h-3" />
-                  </button>
-                  <button
-                    onClick={() => setSquadView("list")}
-                    className={`p-1 ${squadView === "list" ? "bg-accent text-primary" : "text-muted hover:text-white"}`}
-                  >
-                    <List className="w-3 h-3" />
-                  </button>
+            <div className="px-4 py-2 border-b border-muted/20 flex-shrink-0">
+              <div className="flex items-center justify-between mb-1.5">
+                <h2 className="text-sm font-semibold text-muted uppercase tracking-wider">
+                  My Squad
+                </h2>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-accent font-bold">{mySquad.length}/11</span>
+                  <div className="flex rounded-md overflow-hidden border border-muted/30">
+                    <button
+                      onClick={() => setSquadView("pitch")}
+                      className={`p-1 ${squadView === "pitch" ? "bg-accent text-primary" : "text-muted hover:text-white"}`}
+                    >
+                      <LayoutGrid className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => setSquadView("list")}
+                      className={`p-1 ${squadView === "list" ? "bg-accent text-primary" : "text-muted hover:text-white"}`}
+                    >
+                      <List className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
+              </div>
+              {/* Position slot indicators */}
+              <div className="flex gap-2 flex-wrap">
+                {([["GK", 1], ["DEF", 4], ["MID", 3], ["FWD", 3]] as const).map(([pos, limit]) => {
+                  const count = squadByPosition[pos].length;
+                  const full = count >= limit;
+                  return (
+                    <span key={pos} className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${full ? "bg-accent/20 text-accent border-accent/40" : "border-muted/30 text-muted"}`}>
+                      {pos} {count}/{limit}
+                    </span>
+                  );
+                })}
               </div>
             </div>
             {squadView === "pitch" ? (
@@ -516,7 +530,7 @@ export default function DraftRoom({
               <p className="text-gray-400">
                 Squad after pick:{" "}
                 <span className="text-white font-bold">
-                  {mySquad.length + 1}/7
+                  {mySquad.length + 1}/11
                 </span>
               </p>
             </div>
