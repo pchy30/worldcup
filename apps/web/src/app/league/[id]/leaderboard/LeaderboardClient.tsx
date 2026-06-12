@@ -5,12 +5,35 @@ import { createClient } from "@/lib/supabase/client";
 import type { League, ManagerStanding } from "@wcf/shared";
 import { rankManagers } from "@wcf/shared";
 import Link from "next/link";
-import { Trophy, Medal, Target, Zap, ArrowRightLeft } from "lucide-react";
+import { Trophy, Medal, Target, Zap, ArrowRightLeft, ChevronDown, ChevronUp, Star } from "lucide-react";
+import PositionBadge from "@/components/PositionBadge";
+import type { PlayerPosition } from "@wcf/shared";
+
+export interface ManagerDetail {
+  squad: {
+    id: string;
+    name: string;
+    position: PlayerPosition;
+    total_points: number;
+    goals: number;
+    assists: number;
+    clean_sheets: number;
+    team: { name: string } | null;
+  }[];
+  bonusTeams: {
+    id: string;
+    name: string;
+    flag_url: string | null;
+    code: string;
+    round: number;
+  }[];
+}
 
 interface LeaderboardClientProps {
   league: League;
   initialStandings: ManagerStanding[];
   currentUserId: string;
+  managerDetails: Record<string, ManagerDetail>;
 }
 
 const medalColors = [
@@ -23,9 +46,11 @@ export default function LeaderboardClient({
   league,
   initialStandings,
   currentUserId,
+  managerDetails,
 }: LeaderboardClientProps) {
   const supabase = createClient();
   const [standings, setStandings] = useState<ManagerStanding[]>(initialStandings);
+  const [expandedManager, setExpandedManager] = useState<string | null>(null);
 
   useEffect(() => {
     const channel = supabase
@@ -171,80 +196,106 @@ export default function LeaderboardClient({
             {standings.map((standing, idx) => {
               const rank = idx + 1;
               const isMe = standing.manager_id === currentUserId;
+              const isExpanded = expandedManager === standing.manager_id;
+              const detail = managerDetails[standing.manager_id];
 
               return (
-                <tr
-                  key={standing.manager_id}
-                  className={`border-b border-muted/10 transition-colors ${
-                    isMe
-                      ? "bg-accent/5 border-accent/20"
-                      : "hover:bg-primary/20"
-                  }`}
-                >
-                  {/* Rank */}
-                  <td className="px-4 py-3">
-                    {rank <= 3 ? (
-                      <Medal
-                        className={`w-4 h-4 ${
-                          medalColors[rank - 1] ?? "text-muted"
-                        }`}
-                      />
-                    ) : (
-                      <span className="text-muted text-sm font-medium">
-                        {rank}
-                      </span>
-                    )}
-                  </td>
+                <>
+                  <tr
+                    key={standing.manager_id}
+                    onClick={() => setExpandedManager(isExpanded ? null : standing.manager_id)}
+                    className={`border-b border-muted/10 transition-colors cursor-pointer ${
+                      isMe
+                        ? "bg-accent/5 border-accent/20"
+                        : "hover:bg-primary/20"
+                    } ${isExpanded ? "border-b-0" : ""}`}
+                  >
+                    {/* Rank */}
+                    <td className="px-4 py-3">
+                      {rank <= 3 ? (
+                        <Medal className={`w-4 h-4 ${medalColors[rank - 1] ?? "text-muted"}`} />
+                      ) : (
+                        <span className="text-muted text-sm font-medium">{rank}</span>
+                      )}
+                    </td>
 
-                  {/* Manager */}
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <div
-                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
-                          isMe
-                            ? "bg-accent text-primary"
-                            : "bg-surface text-white border border-muted/30"
-                        }`}
-                      >
-                        {standing.display_name.charAt(0).toUpperCase()}
+                    {/* Manager */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${isMe ? "bg-accent text-primary" : "bg-surface text-white border border-muted/30"}`}>
+                          {standing.display_name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className={`font-medium text-sm ${isMe ? "text-accent" : "text-white"}`}>
+                          {standing.display_name}
+                          {isMe && <span className="ml-1.5 text-xs text-muted">(you)</span>}
+                        </span>
                       </div>
-                      <span
-                        className={`font-medium text-sm ${
-                          isMe ? "text-accent" : "text-white"
-                        }`}
-                      >
-                        {standing.display_name}
-                        {isMe && (
-                          <span className="ml-1.5 text-xs text-muted">(you)</span>
+                    </td>
+
+                    {/* Points */}
+                    <td className="px-4 py-3 text-right">
+                      <span className="text-accent font-bold text-base">{standing.total_points}</span>
+                    </td>
+
+                    {/* Goals */}
+                    <td className="px-4 py-3 text-right text-sm text-gray-300 hidden sm:table-cell">
+                      {standing.goals_scored}
+                    </td>
+
+                    {/* Assists */}
+                    <td className="px-4 py-3 text-right text-sm text-gray-300 hidden sm:table-cell">
+                      {standing.assists}
+                    </td>
+
+                    {/* Best player / expand toggle */}
+                    <td className="px-4 py-3 text-right text-sm text-muted hidden md:table-cell">
+                      <div className="flex items-center justify-end gap-2">
+                        <span>{standing.highest_individual_player_points > 0 ? `${standing.highest_individual_player_points} pts` : "—"}</span>
+                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      </div>
+                    </td>
+                  </tr>
+
+                  {/* Expanded squad + bonus teams */}
+                  {isExpanded && detail && (
+                    <tr key={`${standing.manager_id}-detail`} className={`border-b border-muted/10 ${isMe ? "bg-accent/5" : "bg-primary/30"}`}>
+                      <td colSpan={6} className="px-4 py-4">
+                        {/* Bonus teams */}
+                        {detail.bonusTeams.length > 0 && (
+                          <div className="mb-4">
+                            <div className="flex items-center gap-1.5 mb-2">
+                              <Star className="w-3.5 h-3.5 text-accent" />
+                              <span className="text-xs font-semibold text-muted uppercase tracking-wider">Bonus Teams</span>
+                              <span className="text-xs text-muted ml-1">Win +3 · Draw +1</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {detail.bonusTeams.map((t, i) => (
+                                <div key={i} className="flex items-center gap-1.5 bg-surface border border-muted/20 rounded-lg px-2.5 py-1.5">
+                                  {t.flag_url && <img src={t.flag_url} alt={t.code} className="w-6 h-4 object-cover rounded" />}
+                                  <span className="text-sm text-white font-medium">{t.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         )}
-                      </span>
-                    </div>
-                  </td>
 
-                  {/* Points */}
-                  <td className="px-4 py-3 text-right">
-                    <span className="text-accent font-bold text-base">
-                      {standing.total_points}
-                    </span>
-                  </td>
-
-                  {/* Goals */}
-                  <td className="px-4 py-3 text-right text-sm text-gray-300 hidden sm:table-cell">
-                    {standing.goals_scored}
-                  </td>
-
-                  {/* Assists */}
-                  <td className="px-4 py-3 text-right text-sm text-gray-300 hidden sm:table-cell">
-                    {standing.assists}
-                  </td>
-
-                  {/* Best player */}
-                  <td className="px-4 py-3 text-right text-sm text-muted hidden md:table-cell">
-                    {standing.highest_individual_player_points > 0
-                      ? `${standing.highest_individual_player_points} pts`
-                      : "—"}
-                  </td>
-                </tr>
+                        {/* Squad */}
+                        <div className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Squad</div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                          {detail.squad
+                            .sort((a, b) => b.total_points - a.total_points)
+                            .map((player) => (
+                              <div key={player.id} className="flex items-center gap-2 bg-surface border border-muted/20 rounded-lg px-3 py-2">
+                                <PositionBadge position={player.position} />
+                                <span className="text-sm text-white font-medium flex-1 truncate">{player.name}</span>
+                                <span className="text-accent font-bold text-sm flex-shrink-0">{player.total_points} pts</span>
+                              </div>
+                            ))}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
               );
             })}
           </tbody>
