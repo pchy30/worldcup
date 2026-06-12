@@ -71,9 +71,9 @@ export async function POST(request: NextRequest) {
   }
 
   const maxPart = max_participants ?? 8;
-  if (maxPart < 4 || maxPart > 20) {
+  if (maxPart < 2 || maxPart > 20) {
     return NextResponse.json(
-      { error: "max_participants must be between 4 and 20." },
+      { error: "max_participants must be between 2 and 20." },
       { status: 400 }
     );
   }
