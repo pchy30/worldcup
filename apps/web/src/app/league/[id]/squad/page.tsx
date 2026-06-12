@@ -7,6 +7,47 @@ import TransferPanel from "./TransferPanel";
 import NextWindowCard from "./NextWindowCard";
 import { Target, Zap, Shield, Star } from "lucide-react";
 
+export interface NextFixture {
+  opponent: string;
+  date: string;
+}
+
+async function fetchNextFixtures(): Promise<Record<string, NextFixture>> {
+  const key = process.env.FOOTBALL_DATA_KEY;
+  if (!key) return {};
+  try {
+    const res = await fetch(
+      "https://api.football-data.org/v4/competitions/WC/matches?status=SCHEDULED",
+      { headers: { "X-Auth-Token": key }, next: { revalidate: 1800 } }
+    );
+    if (!res.ok) return {};
+    const data = await res.json();
+    const matches: {
+      utcDate: string;
+      homeTeam: { id: number; name: string };
+      awayTeam: { id: number; name: string };
+    }[] = data.matches ?? [];
+
+    // Sort ascending and take first match per team — keyed by team name
+    matches.sort((a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime());
+    const map: Record<string, NextFixture> = {};
+    for (const m of matches) {
+      const dateStr = new Date(m.utcDate).toLocaleDateString("en-GB", {
+        weekday: "short", day: "numeric", month: "short", timeZone: "Europe/London",
+      });
+      const timeStr = new Date(m.utcDate).toLocaleTimeString("en-GB", {
+        hour: "2-digit", minute: "2-digit", timeZone: "Europe/London",
+      });
+      const formatted = `${dateStr}, ${timeStr}`;
+      if (!map[m.homeTeam.name]) map[m.homeTeam.name] = { opponent: m.awayTeam.name, date: formatted };
+      if (!map[m.awayTeam.name]) map[m.awayTeam.name] = { opponent: m.homeTeam.name, date: formatted };
+    }
+    return map;
+  } catch {
+    return {};
+  }
+}
+
 interface PageProps {
   params: { id: string };
 }
@@ -106,6 +147,7 @@ export default async function SquadPage({ params }: PageProps) {
 
   // All available (undrafted) players if window is open
   let availablePlayers: Player[] = [];
+  let nextFixtures: Record<number, NextFixture> = {};
   if (openWindow) {
     const { data: allSquads } = await supabase
       .from("squad_players")
@@ -122,6 +164,8 @@ export default async function SquadPage({ params }: PageProps) {
     availablePlayers = ((undrfted as Player[]) ?? []).filter(
       (p) => !draftedIds.has(p.id)
     );
+
+    nextFixtures = await fetchNextFixtures();
   }
 
   const totalPoints = mySquad.reduce((sum, p) => sum + p.total_points, 0);
@@ -259,6 +303,7 @@ export default async function SquadPage({ params }: PageProps) {
           windowClosesAt={openWindow.closes_at}
           transfersUsed={transfersUsed}
           maxTransfers={2}
+          nextFixtures={nextFixtures}
         />
       )}
 

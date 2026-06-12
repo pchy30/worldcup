@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import type { Player, PlayerPosition } from "@wcf/shared";
 import PlayerCard from "@/components/PlayerCard";
 import CountdownTimer from "@/components/CountdownTimer";
-import { ArrowRightLeft, Search, X, Loader2 } from "lucide-react";
+import { ArrowRightLeft, Search, X, Loader2, Calendar } from "lucide-react";
+import type { NextFixture } from "./page";
 
 const POSITIONS: PlayerPosition[] = ["GK", "DEF", "MID", "FWD"];
 
@@ -17,6 +18,7 @@ interface TransferPanelProps {
   windowClosesAt: string;
   transfersUsed: number;
   maxTransfers: number;
+  nextFixtures?: Record<string, NextFixture>;
 }
 
 export default function TransferPanel({
@@ -26,6 +28,7 @@ export default function TransferPanel({
   windowClosesAt,
   transfersUsed: initialTransfersUsed,
   maxTransfers,
+  nextFixtures = {},
 }: TransferPanelProps) {
   const router = useRouter();
   const [squad, setSquad] = useState<Player[]>(initialSquad);
@@ -237,19 +240,27 @@ export default function TransferPanel({
                 No available players match your filters.
               </p>
             )}
-            {filteredAvailable.map((player) => (
-              <PlayerCard
-                key={player.id}
-                player={player}
-                selectable
-                selected={playerIn?.id === player.id}
-                onClick={() =>
-                  setPlayerIn(
-                    playerIn?.id === player.id ? null : player
-                  )
-                }
-              />
-            ))}
+            {filteredAvailable.map((player) => {
+              const fixture = player.team?.name ? nextFixtures[player.team.name] : undefined;
+              return (
+                <div key={player.id}>
+                  <PlayerCard
+                    player={player}
+                    selectable
+                    selected={playerIn?.id === player.id}
+                    onClick={() =>
+                      setPlayerIn(playerIn?.id === player.id ? null : player)
+                    }
+                  />
+                  {fixture && (
+                    <div className="flex items-center gap-1 px-2 py-1 text-[11px] text-muted">
+                      <Calendar className="w-3 h-3 flex-shrink-0" />
+                      <span>Next: vs {fixture.opponent} · {fixture.date}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
