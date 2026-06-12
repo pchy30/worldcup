@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     .from("national_teams")
     .update({ is_eliminated: eliminated })
     .eq("code", team_code.toUpperCase())
-    .select("name, code, is_eliminated")
+    .select("id, name, code, is_eliminated")
     .single();
 
   if (error || !data) {
@@ -38,5 +38,39 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  return NextResponse.json(data);
+  let freeTransfersAwarded = 0;
+
+  // If eliminating (not reinstating), award a free transfer to every manager
+  // who has at least one player from this team, per league
+  if (eliminated) {
+    const { data: affectedSquads } = await adminSupabase
+      .from("squad_players")
+      .select("manager_id, league_id, player:players!inner(team_id)")
+      .eq("player.team_id", data.id);
+
+    // Dedupe by manager_id + league_id — one free transfer per manager per elimination
+    const seen = new Set<string>();
+    for (const row of affectedSquads ?? []) {
+      const key = `${row.manager_id}::${row.league_id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      freeTransfersAwarded++;
+
+      // Fetch current value and increment
+      const { data: member } = await adminSupabase
+        .from("league_members")
+        .select("free_transfers")
+        .eq("user_id", row.manager_id)
+        .eq("league_id", row.league_id)
+        .single();
+
+      await adminSupabase
+        .from("league_members")
+        .update({ free_transfers: (member?.free_transfers ?? 0) + 1 })
+        .eq("user_id", row.manager_id)
+        .eq("league_id", row.league_id);
+    }
+  }
+
+  return NextResponse.json({ ...data, free_transfers_awarded: freeTransfersAwarded });
 }

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Player, PlayerPosition } from "@wcf/shared";
 import PlayerCard from "@/components/PlayerCard";
 import CountdownTimer from "@/components/CountdownTimer";
-import { ArrowRightLeft, Search, X, Loader2, Calendar } from "lucide-react";
+import { ArrowRightLeft, Search, X, Loader2, Calendar, Gift } from "lucide-react";
 import type { NextFixture } from "./page";
 
 const POSITIONS: PlayerPosition[] = ["GK", "DEF", "MID", "FWD"];
@@ -14,10 +14,11 @@ interface TransferPanelProps {
   leagueId: string;
   mySquad: Player[];
   availablePlayers: Player[];
-  windowId: string;
-  windowClosesAt: string;
+  windowId: string | null;
+  windowClosesAt: string | null;
   transfersUsed: number;
   maxTransfers: number;
+  freeTransfers?: number;
   nextFixtures?: Record<string, NextFixture>;
 }
 
@@ -25,16 +26,20 @@ export default function TransferPanel({
   leagueId,
   mySquad: initialSquad,
   availablePlayers: initialAvailable,
+  windowId,
   windowClosesAt,
   transfersUsed: initialTransfersUsed,
   maxTransfers,
+  freeTransfers: initialFreeTransfers = 0,
   nextFixtures = {},
 }: TransferPanelProps) {
   const router = useRouter();
   const [squad, setSquad] = useState<Player[]>(initialSquad);
   const [available, setAvailable] = useState<Player[]>(initialAvailable);
   const [transfersUsed, setTransfersUsed] = useState(initialTransfersUsed);
-  const transfersRemaining = maxTransfers - transfersUsed;
+  const [freeTransfers, setFreeTransfers] = useState(initialFreeTransfers);
+  const isWindowOpen = !!windowId && !!windowClosesAt;
+  const transfersRemaining = isWindowOpen ? maxTransfers - transfersUsed : 0;
   const [playerOut, setPlayerOut] = useState<Player | null>(null);
   const [playerIn, setPlayerIn] = useState<Player | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -86,7 +91,6 @@ export default function TransferPanel({
       // Update squad and available lists locally — no full page refresh needed
       setSquad((prev) => {
         const next = prev.filter((p) => p.id !== playerOut!.id);
-        // player_in comes back in data.squad with full player details
         const newPlayer = (data.squad ?? [])
           .map((r: { player: Player }) => r.player)
           .find((p: Player) => p.id === playerIn!.id);
@@ -96,7 +100,8 @@ export default function TransferPanel({
         ...prev.filter((p) => p.id !== playerIn!.id),
         playerOut!,
       ]);
-      setTransfersUsed((n) => n + 1);
+      if (isWindowOpen) setTransfersUsed((n) => n + 1);
+      if (data.free_transfers_remaining !== undefined) setFreeTransfers(data.free_transfers_remaining);
       setSuccess(true);
       setPlayerOut(null);
       setPlayerIn(null);
@@ -107,38 +112,61 @@ export default function TransferPanel({
     }
   };
 
+  const canTransfer = transfersRemaining > 0 || freeTransfers > 0;
+
   return (
     <div className="mb-10">
+      {/* Free transfer banner */}
+      {freeTransfers > 0 && (
+        <div className="flex items-start gap-3 bg-accent/10 border border-accent/30 text-accent rounded-xl px-4 py-3 mb-4">
+          <Gift className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold">
+              {freeTransfers === 1
+                ? "You have 1 free transfer available"
+                : `You have ${freeTransfers} free transfers available`}
+            </p>
+            <p className="text-xs text-accent/70 mt-0.5">
+              One or more of your players&apos; nations have been eliminated. Use your free transfer{freeTransfers !== 1 ? "s" : ""} to replace them — no window needed.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <ArrowRightLeft className="w-5 h-5 text-accent" />
-            Transfer Window
+            {isWindowOpen ? "Transfer Window" : "Free Transfer"}
           </h2>
-          <div className="flex items-center gap-2 mt-1">
-            {Array.from({ length: maxTransfers }).map((_, i) => (
-              <div
-                key={i}
-                className={`w-2.5 h-2.5 rounded-full ${i < transfersUsed ? "bg-muted" : "bg-accent"}`}
-              />
-            ))}
-            <span className="text-xs text-muted ml-1">
-              {transfersRemaining === 0
-                ? "No transfers remaining"
-                : `${transfersRemaining} transfer${transfersRemaining !== 1 ? "s" : ""} remaining`}
-            </span>
+          {isWindowOpen && (
+            <div className="flex items-center gap-2 mt-1">
+              {Array.from({ length: maxTransfers }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-2.5 h-2.5 rounded-full ${i < transfersUsed ? "bg-muted" : "bg-accent"}`}
+                />
+              ))}
+              <span className="text-xs text-muted ml-1">
+                {transfersRemaining === 0
+                  ? "No transfers remaining"
+                  : `${transfersRemaining} transfer${transfersRemaining !== 1 ? "s" : ""} remaining`}
+              </span>
+            </div>
+          )}
+        </div>
+        {isWindowOpen && windowClosesAt && (
+          <div className="flex items-center gap-2 text-sm text-muted">
+            <span className="text-xs">Closes in:</span>
+            <CountdownTimer
+              deadline={windowClosesAt}
+              onExpired={() => router.refresh()}
+            />
           </div>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted">
-          <span className="text-xs">Closes in:</span>
-          <CountdownTimer
-            deadline={windowClosesAt}
-            onExpired={() => router.refresh()}
-          />
-        </div>
+        )}
       </div>
 
-      {transfersRemaining === 0 && (
+      {isWindowOpen && transfersRemaining === 0 && freeTransfers === 0 && (
         <div className="bg-muted/10 border border-muted/30 text-muted rounded-lg px-4 py-3 text-sm mb-4">
           You have used all {maxTransfers} transfers for this window. Come back next window.
         </div>
@@ -156,7 +184,7 @@ export default function TransferPanel({
         </div>
       )}
 
-      <div className={`grid grid-cols-1 lg:grid-cols-2 gap-6 ${transfersRemaining === 0 ? "opacity-50 pointer-events-none" : ""}`}>
+      <div className={`grid grid-cols-1 lg:grid-cols-2 gap-6 ${!canTransfer ? "opacity-50 pointer-events-none" : ""}`}>
         {/* Select player out */}
         <div className="card">
           <h3 className="text-sm font-semibold text-muted uppercase tracking-wider mb-3">

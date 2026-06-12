@@ -50,7 +50,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
   const knockoutMode = league?.knockout_mode ?? false;
 
-  // 2. Find open transfer window for this league
+  // 2. Find open transfer window (if any)
   const now = new Date().toISOString();
   const { data: openWindow, error: windowError } = await supabase
     .from("transfer_windows")
@@ -65,29 +65,62 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: windowError.message }, { status: 500 });
   }
 
-  if (!openWindow) {
+  // 3. Fetch the player being transferred out early — needed to check elimination status
+  const { data: playerOutEarly } = await supabase
+    .from("players")
+    .select("id, position, team_id, team:national_teams(is_eliminated)")
+    .eq("id", player_out_id)
+    .single();
+
+  const playerOutTeam = playerOutEarly
+    ? (Array.isArray(playerOutEarly.team) ? playerOutEarly.team[0] : playerOutEarly.team)
+    : null;
+  const playerOutEliminated = playerOutTeam?.is_eliminated ?? false;
+
+  // 4. Fetch manager's free_transfers
+  const { data: memberRow } = await supabase
+    .from("league_members")
+    .select("free_transfers")
+    .eq("league_id", leagueId)
+    .eq("user_id", user.id)
+    .single();
+
+  const freeTransfers = memberRow?.free_transfers ?? 0;
+  const isFreeTransfer = !openWindow && playerOutEliminated && freeTransfers > 0;
+
+  if (!openWindow && !isFreeTransfer) {
+    if (!openWindow && playerOutEliminated && freeTransfers === 0) {
+      return NextResponse.json(
+        { error: "You have no free transfers remaining for eliminated players." },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: "No transfer window is currently open for this league." },
       { status: 400 }
     );
   }
 
-  // 2. Check this manager hasn't used all transfers this window
-  const { count: transfersUsed } = await supabase
-    .from("transfers")
-    .select("id", { count: "exact", head: true })
-    .eq("league_id", leagueId)
-    .eq("manager_id", user.id)
-    .eq("transfer_window_id", openWindow.id);
+  // 5. Check transfer quota (window transfers only)
+  let transfersUsed = 0;
+  if (openWindow) {
+    const { count } = await supabase
+      .from("transfers")
+      .select("id", { count: "exact", head: true })
+      .eq("league_id", leagueId)
+      .eq("manager_id", user.id)
+      .eq("transfer_window_id", openWindow.id);
+    transfersUsed = count ?? 0;
 
-  if ((transfersUsed ?? 0) >= MAX_TRANSFERS_PER_WINDOW) {
-    return NextResponse.json(
-      { error: `You have used all ${MAX_TRANSFERS_PER_WINDOW} transfers for this window.` },
-      { status: 400 }
-    );
+    if (transfersUsed >= MAX_TRANSFERS_PER_WINDOW) {
+      return NextResponse.json(
+        { error: `You have used all ${MAX_TRANSFERS_PER_WINDOW} transfers for this window.` },
+        { status: 400 }
+      );
+    }
   }
 
-  // 3. Verify player_out is in this manager's squad
+  // 6. Verify player_out is in this manager's squad
   const { data: outSquadEntry } = await supabase
     .from("squad_players")
     .select("id")
@@ -103,7 +136,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  // 4. Verify player_in is not already in this manager's own squad (always enforced)
+  // 7. Verify player_in is not already in this manager's own squad (always enforced)
   const { data: myExistingEntry } = await supabase
     .from("squad_players")
     .select("id")
@@ -136,7 +169,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
   }
 
-  // 5. Fetch player_in details
+  // 8. Fetch player_in details
   const { data: playerIn, error: playerInError } = await supabase
     .from("players")
     .select("*, team:national_teams(*)")
@@ -147,7 +180,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "Player not found." }, { status: 404 });
   }
 
-  // 6. Player coming in must be from an active (non-eliminated) nation
+  // 9. Player coming in must be from an active (non-eliminated) nation
   if ((playerIn.team as { is_eliminated: boolean } | null)?.is_eliminated) {
     return NextResponse.json(
       { error: "This player's national team has been eliminated from the tournament." },
@@ -155,19 +188,15 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  // 7. Fetch current squad for position + team count checks
+  // 10. Fetch current squad for position + team count checks
   const { data: mySquad } = await supabase
     .from("squad_players")
     .select("player_id, player:players(team_id, position)")
     .eq("league_id", leagueId)
     .eq("manager_id", user.id);
 
-  // Fetch the player being transferred out to get their position
-  const { data: playerOut } = await supabase
-    .from("players")
-    .select("id, position, team_id")
-    .eq("id", player_out_id)
-    .single();
+  // Use playerOutEarly which we already fetched; re-alias for clarity
+  const playerOut = playerOutEarly;
 
   if (!playerOut) {
     return NextResponse.json({ error: "Player to transfer out not found." }, { status: 404 });
@@ -247,7 +276,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: addError.message }, { status: 500 });
   }
 
-  // Insert transfer record
+  // Insert transfer record (window_id is null for free transfers outside a window)
   const { data: transferRecord, error: transferRecordError } = await supabase
     .from("transfers")
     .insert({
@@ -255,7 +284,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       manager_id: user.id,
       player_out_id,
       player_in_id,
-      transfer_window_id: openWindow.id,
+      transfer_window_id: openWindow?.id ?? null,
       confirmed_at: new Date().toISOString(),
     })
     .select()
@@ -265,7 +294,18 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     console.error("Transfer record insert error:", transferRecordError.message);
   }
 
-  const transfersRemaining = MAX_TRANSFERS_PER_WINDOW - ((transfersUsed ?? 0) + 1);
+  // Decrement free_transfers if this was a free transfer
+  if (isFreeTransfer) {
+    await supabase
+      .from("league_members")
+      .update({ free_transfers: freeTransfers - 1 })
+      .eq("league_id", leagueId)
+      .eq("user_id", user.id);
+  }
+
+  const transfersRemaining = openWindow
+    ? MAX_TRANSFERS_PER_WINDOW - (transfersUsed + 1)
+    : null;
 
   // Return updated squad
   const { data: updatedSquad } = await supabase
@@ -275,7 +315,12 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     .eq("manager_id", user.id);
 
   return NextResponse.json(
-    { transfer: transferRecord, squad: updatedSquad, transfers_remaining: transfersRemaining },
+    {
+      transfer: transferRecord,
+      squad: updatedSquad,
+      transfers_remaining: transfersRemaining,
+      free_transfers_remaining: isFreeTransfer ? freeTransfers - 1 : freeTransfers,
+    },
     { status: 200 }
   );
 }

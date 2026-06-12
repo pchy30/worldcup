@@ -33,6 +33,7 @@ export interface LeagueMember {
   goals_scored: number;
   assists: number;
   bonus_points: number;
+  free_transfers: number;
   joined_at: string;
 }
 

@@ -145,10 +145,21 @@ export default async function SquadPage({ params }: PageProps) {
     transfersUsed = count ?? 0;
   }
 
-  // All available players if window is open
+  // Fetch manager's free transfer balance
+  const { data: memberRow } = await supabase
+    .from("league_members")
+    .select("free_transfers")
+    .eq("league_id", id)
+    .eq("user_id", user.id)
+    .single();
+  const freeTransfers = memberRow?.free_transfers ?? 0;
+
+  const showTransferPanel = !!openWindow || freeTransfers > 0;
+
+  // All available players if window is open OR free transfer available
   let availablePlayers: Player[] = [];
   let nextFixtures: Record<string, NextFixture> = {};
-  if (openWindow) {
+  if (showTransferPanel) {
     const { data: allPlayersRaw } = await supabase
       .from("players")
       .select("*, team:national_teams(*)")
@@ -157,8 +168,6 @@ export default async function SquadPage({ params }: PageProps) {
     const allPlayers = (allPlayersRaw as Player[]) ?? [];
 
     if (league.knockout_mode) {
-      // Knockout mode: any active (non-eliminated) player is available, even if in another squad
-      // but exclude players already in this manager's own squad
       const myPlayerIds = new Set(mySquad.map((p) => p.id));
       availablePlayers = allPlayers.filter((p) => {
         if (myPlayerIds.has(p.id)) return false;
@@ -166,7 +175,6 @@ export default async function SquadPage({ params }: PageProps) {
         return !team?.is_eliminated;
       });
     } else {
-      // Normal mode: only undrafted players
       const { data: allSquads } = await supabase
         .from("squad_players")
         .select("player_id")
@@ -305,20 +313,21 @@ export default async function SquadPage({ params }: PageProps) {
       </div>
 
       {/* Transfer section */}
-      {openWindow && (
+      {showTransferPanel && (
         <TransferPanel
           leagueId={id}
           mySquad={mySquad}
           availablePlayers={availablePlayers}
-          windowId={openWindow.id}
-          windowClosesAt={openWindow.closes_at}
+          windowId={openWindow?.id ?? null}
+          windowClosesAt={openWindow?.closes_at ?? null}
           transfersUsed={transfersUsed}
           maxTransfers={2}
+          freeTransfers={freeTransfers}
           nextFixtures={nextFixtures}
         />
       )}
 
-      {!openWindow && (
+      {!showTransferPanel && (
         <NextWindowCard opensAt={nextWindowOpensAt} />
       )}
 

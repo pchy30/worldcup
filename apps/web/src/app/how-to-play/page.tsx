@@ -60,7 +60,7 @@ const steps = [
     icon: RefreshCcw,
     title: "Use transfer windows",
     description:
-      "Transfer windows open every 3 days and last 24 hours. You get 2 transfers per window. Drop players from eliminated nations and bring in in-form stars — you can only swap like-for-like positions. From the Quarter-Finals onward, players are no longer exclusive.",
+      "Transfer windows open every 3 days and last 24 hours. You get 2 transfers per window — like-for-like positions only. When a nation is knocked out, each affected manager gets an immediate free transfer to use outside the window. From the Quarter-Finals onward, players are no longer exclusive.",
     color: "text-purple-400",
     bg: "bg-purple-400/10",
     border: "border-purple-400/20",
@@ -99,7 +99,7 @@ const tips = [
   "Spread your player picks across different nations — don't stack from one team that might go out early.",
   "GKs and defenders score clean sheet points. A top GK from a defensive side can rack up big points.",
   "Use early picks on clinical strikers — goals score the most points at +4 each.",
-  "Watch the transfer window: dropping players from eliminated teams early gives you better picks than waiting.",
+  "When a nation is eliminated you get an automatic free transfer — use it immediately rather than waiting for the next window, as the best replacement players go fast.",
   "In snake drafts, the manager picking last in round 1 picks first in round 2 — use that double pick to grab two stars back-to-back.",
 ];
 
@@ -212,7 +212,7 @@ export default function HowToPlayPage() {
           </div>
           <div className="flex items-start gap-3">
             <Shield className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-gray-300">Players from <span className="text-white font-semibold">eliminated nations</span> stop earning points. Use transfer windows to replace them.</p>
+            <p className="text-sm text-gray-300">When a nation is <span className="text-white font-semibold">eliminated</span>, every manager with a player from that nation gets an immediate <span className="text-white font-semibold">free transfer</span> — usable outside the normal window to replace that player.</p>
           </div>
           <div className="flex items-start gap-3">
             <Star className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
