@@ -21,6 +21,7 @@ export interface League {
   created_at: string;
   team_pick_index: number;       // how many national team picks have been made
   team_pick_offers: string[];    // UUID[] of teams currently on offer
+  knockout_mode: boolean;        // true from quarter-finals onward — players no longer exclusive
 }
 
 export interface LeagueMember {

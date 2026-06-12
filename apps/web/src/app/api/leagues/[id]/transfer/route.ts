@@ -41,7 +41,16 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  // 1. Find open transfer window for this league
+  // 1. Fetch league to check knockout_mode
+  const { data: league } = await supabase
+    .from("leagues")
+    .select("knockout_mode")
+    .eq("id", leagueId)
+    .single();
+
+  const knockoutMode = league?.knockout_mode ?? false;
+
+  // 2. Find open transfer window for this league
   const now = new Date().toISOString();
   const { data: openWindow, error: windowError } = await supabase
     .from("transfer_windows")
@@ -94,19 +103,21 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  // 4. Verify player_in is not already in any squad in this league
-  const { data: inSquadEntry } = await supabase
-    .from("squad_players")
-    .select("id")
-    .eq("league_id", leagueId)
-    .eq("player_id", player_in_id)
-    .maybeSingle();
+  // 4. In normal mode, verify player_in is not already in any squad in this league
+  if (!knockoutMode) {
+    const { data: inSquadEntry } = await supabase
+      .from("squad_players")
+      .select("id")
+      .eq("league_id", leagueId)
+      .eq("player_id", player_in_id)
+      .maybeSingle();
 
-  if (inSquadEntry) {
-    return NextResponse.json(
-      { error: "This player is already in another manager's squad." },
-      { status: 400 }
-    );
+    if (inSquadEntry) {
+      return NextResponse.json(
+        { error: "This player is already in another manager's squad." },
+        { status: 400 }
+      );
+    }
   }
 
   // 5. Fetch player_in details
@@ -173,17 +184,19 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
   }
 
-  // Max 2 players per national team after transfer
-  const newTeamCount = (teamCounts[playerIn.team_id] ?? 0) + 1;
-  if (newTeamCount > 2) {
-    return NextResponse.json(
-      {
-        error: `This transfer would give you more than 2 players from ${
-          (playerIn.team as { name: string } | null)?.name ?? playerIn.team_id
-        }.`,
-      },
-      { status: 400 }
-    );
+  // Max 2 players per national team after transfer (relaxed in knockout mode)
+  if (!knockoutMode) {
+    const newTeamCount = (teamCounts[playerIn.team_id] ?? 0) + 1;
+    if (newTeamCount > 2) {
+      return NextResponse.json(
+        {
+          error: `This transfer would give you more than 2 players from ${
+            (playerIn.team as { name: string } | null)?.name ?? playerIn.team_id
+          }.`,
+        },
+        { status: 400 }
+      );
+    }
   }
 
   // All checks passed — execute transfer

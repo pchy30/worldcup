@@ -94,6 +94,15 @@ Deno.serve(async (_req) => {
         .eq("api_football_id", apiId);
     }
 
+    // 4a. Auto-enable knockout mode on all leagues when QF matches appear
+    const hasQF = matches.some((m: { stage: string }) => m.stage === "QUARTER_FINALS");
+    if (hasQF) {
+      await supabase
+        .from("leagues")
+        .update({ knockout_mode: true })
+        .eq("knockout_mode", false);
+    }
+
     // 5a. Calculate national team bonus points per manager per league
     // Win = +3, Draw = +1 for each team the manager picked
     const { data: allManagerTeams } = await supabase

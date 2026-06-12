@@ -145,25 +145,33 @@ export default async function SquadPage({ params }: PageProps) {
     transfersUsed = count ?? 0;
   }
 
-  // All available (undrafted) players if window is open
+  // All available players if window is open
   let availablePlayers: Player[] = [];
   let nextFixtures: Record<string, NextFixture> = {};
   if (openWindow) {
-    const { data: allSquads } = await supabase
-      .from("squad_players")
-      .select("player_id")
-      .eq("league_id", id);
-
-    const draftedIds = new Set((allSquads ?? []).map((r: { player_id: string }) => r.player_id));
-
-    const { data: undrfted } = await supabase
+    const { data: allPlayersRaw } = await supabase
       .from("players")
       .select("*, team:national_teams(*)")
       .order("total_points", { ascending: false });
 
-    availablePlayers = ((undrfted as Player[]) ?? []).filter(
-      (p) => !draftedIds.has(p.id)
-    );
+    const allPlayers = (allPlayersRaw as Player[]) ?? [];
+
+    if (league.knockout_mode) {
+      // Knockout mode: any active (non-eliminated) player is available, even if in another squad
+      availablePlayers = allPlayers.filter((p) => {
+        const team = Array.isArray(p.team) ? p.team[0] : p.team;
+        return !team?.is_eliminated;
+      });
+    } else {
+      // Normal mode: only undrafted players
+      const { data: allSquads } = await supabase
+        .from("squad_players")
+        .select("player_id")
+        .eq("league_id", id);
+
+      const draftedIds = new Set((allSquads ?? []).map((r: { player_id: string }) => r.player_id));
+      availablePlayers = allPlayers.filter((p) => !draftedIds.has(p.id));
+    }
 
     nextFixtures = await fetchNextFixtures();
   }
