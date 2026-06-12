@@ -60,10 +60,10 @@ Deno.serve(async (_req) => {
       }
     }
 
-    // 3. Fetch all GK/DEF players with their team's api_football_id
+    // 3. Fetch all GK/DEF players with their team's api_football_id and card counts
     const { data: players } = await supabase
       .from("players")
-      .select("id, api_football_id, position, team:national_teams(api_football_id)")
+      .select("id, api_football_id, position, yellow_cards, red_cards, team:national_teams(api_football_id)")
       .in("position", ["GK", "DEF"]);
 
     // Update GK/DEF — clean sheets by team
@@ -75,7 +75,8 @@ Deno.serve(async (_req) => {
       const cleanSheets = cleanSheetMap.get(teamApiId) ?? 0;
       const goals = statsMap.get(player.api_football_id)?.goals ?? 0;
       const assists = statsMap.get(player.api_football_id)?.assists ?? 0;
-      const totalPoints = goals * 4 + assists * 3 + cleanSheets * 3;
+      const cardDeductions = (player.yellow_cards ?? 0) * 1 + (player.red_cards ?? 0) * 3;
+      const totalPoints = goals * 4 + assists * 3 + cleanSheets * 3 - cardDeductions;
 
       await supabase
         .from("players")
@@ -85,13 +86,21 @@ Deno.serve(async (_req) => {
       statsMap.delete(player.api_football_id);
     }
 
-    // 4. Update remaining players (MID/FWD) from scorers map
-    for (const [apiId, stats] of statsMap.entries()) {
-      const totalPoints = stats.goals * 4 + stats.assists * 3;
+    // 4. Update all MID/FWD players — scorers get stats from map, others get 0
+    // Fetch all MID/FWD with card counts so deductions apply even to non-scorers
+    const { data: midFwdPlayers } = await supabase
+      .from("players")
+      .select("id, api_football_id, yellow_cards, red_cards")
+      .in("position", ["MID", "FWD"]);
+
+    for (const player of midFwdPlayers ?? []) {
+      const stats = statsMap.get(player.api_football_id) ?? { goals: 0, assists: 0 };
+      const cardDeductions = (player.yellow_cards ?? 0) * 1 + (player.red_cards ?? 0) * 3;
+      const totalPoints = stats.goals * 4 + stats.assists * 3 - cardDeductions;
       await supabase
         .from("players")
         .update({ goals: stats.goals, assists: stats.assists, clean_sheets: 0, total_points: totalPoints })
-        .eq("api_football_id", apiId);
+        .eq("id", player.id);
     }
 
     // 4a. Auto-enable knockout mode on all leagues when QF matches appear

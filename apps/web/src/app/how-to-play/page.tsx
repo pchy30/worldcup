@@ -12,6 +12,7 @@ import {
   Clock,
   Crown,
   Star,
+  Square,
 } from "lucide-react";
 
 const steps = [
@@ -73,6 +74,8 @@ const scoringRules = [
   { icon: Shield, label: "Clean sheet (GK or DEF only)", points: "+3 pts", color: "text-purple-400" },
   { icon: Star, label: "Bonus team win", points: "+3 pts", color: "text-accent" },
   { icon: Star, label: "Bonus team draw", points: "+1 pt", color: "text-accent" },
+  { icon: Square, label: "Yellow card", points: "−1 pt", color: "text-yellow-400" },
+  { icon: Square, label: "Red card", points: "−3 pts", color: "text-red-400" },
 ];
 
 const draftModes = [

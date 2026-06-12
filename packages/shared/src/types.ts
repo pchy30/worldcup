@@ -55,6 +55,8 @@ export interface Player {
   goals: number;
   assists: number;
   clean_sheets: number;
+  yellow_cards: number;
+  red_cards: number;
   total_points: number;
 }
 
