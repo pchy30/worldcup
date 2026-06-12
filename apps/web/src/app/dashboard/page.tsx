@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   PlayCircle,
 } from "lucide-react";
+import LeaveLeagueButton from "./LeaveLeagueButton";
 
 interface LeagueWithMeta extends League {
   memberCount: number;
@@ -178,10 +179,10 @@ export default async function DashboardPage() {
                   : `/league/${league.id}/lobby`;
 
             return (
+              <div key={league.id} className="card hover:border-muted/60 hover:shadow-xl transition-all duration-200 group">
               <Link
-                key={league.id}
                 href={draftPath}
-                className="card hover:border-muted/60 hover:shadow-xl transition-all duration-200 group block"
+                className="block"
               >
                 {/* Status badge */}
                 <div className="flex items-center justify-between mb-4">
@@ -228,6 +229,10 @@ export default async function DashboardPage() {
                   </div>
                 </div>
               </Link>
+              {league.commissioner_id !== user.id && league.draft_status === "pending" && (
+                <LeaveLeagueButton leagueId={league.id} leagueName={league.name} />
+              )}
+              </div>
             );
           })}
         </div>
