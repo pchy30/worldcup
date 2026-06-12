@@ -188,7 +188,7 @@ export default function LeaderboardClient({
               {/* Row — always visible */}
               <button
                 onClick={() => setExpandedManager(isExpanded ? null : standing.manager_id)}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left"
+                className="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/5"
               >
                 {/* Rank */}
                 <div className="w-7 flex-shrink-0 flex justify-center">

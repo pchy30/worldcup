@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import type { League, ManagerStanding } from "@wcf/shared";
 import { rankManagers } from "@wcf/shared";
@@ -61,14 +61,16 @@ export default async function LeaderboardPage({ params }: PageProps) {
 
   const rankedStandings = rankManagers(standings);
 
-  // Fetch every manager's squad players for this league
-  const { data: allSquadRows } = await supabase
+  const adminSupabase = createAdminClient();
+
+  // Fetch every manager's squad players — use admin to bypass RLS on squad_players
+  const { data: allSquadRows } = await adminSupabase
     .from("squad_players")
-    .select("manager_id, player:players(id, name, position, total_points, goals, assists, clean_sheets, team:national_teams(name))")
+    .select("manager_id, player:players(id, name, position, total_points, goals, assists, clean_sheets)")
     .eq("league_id", id);
 
   // Fetch every manager's bonus national teams
-  const { data: allBonusTeams } = await supabase
+  const { data: allBonusTeams } = await adminSupabase
     .from("manager_national_teams")
     .select("manager_id, round, team:national_teams(id, name, flag_url, code)")
     .eq("league_id", id)
@@ -82,7 +84,6 @@ export default async function LeaderboardPage({ params }: PageProps) {
     }
     const rawPlayer = Array.isArray(row.player) ? row.player[0] : row.player;
     if (!rawPlayer) continue;
-    const rawTeam = Array.isArray(rawPlayer.team) ? rawPlayer.team[0] : rawPlayer.team;
     managerDetails[row.manager_id].squad.push({
       id: rawPlayer.id,
       name: rawPlayer.name,
@@ -91,7 +92,7 @@ export default async function LeaderboardPage({ params }: PageProps) {
       goals: rawPlayer.goals,
       assists: rawPlayer.assists,
       clean_sheets: rawPlayer.clean_sheets,
-      team: rawTeam ?? null,
+      team: null,
     } as ManagerDetail["squad"][number]);
   }
   for (const row of allBonusTeams ?? []) {
