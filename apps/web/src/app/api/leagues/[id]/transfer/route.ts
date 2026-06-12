@@ -103,7 +103,23 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  // 4. In normal mode, verify player_in is not already in any squad in this league
+  // 4. Verify player_in is not already in this manager's own squad (always enforced)
+  const { data: myExistingEntry } = await supabase
+    .from("squad_players")
+    .select("id")
+    .eq("league_id", leagueId)
+    .eq("manager_id", user.id)
+    .eq("player_id", player_in_id)
+    .maybeSingle();
+
+  if (myExistingEntry) {
+    return NextResponse.json(
+      { error: "This player is already in your squad." },
+      { status: 400 }
+    );
+  }
+
+  // In normal mode, also verify player_in is not in any other manager's squad
   if (!knockoutMode) {
     const { data: inSquadEntry } = await supabase
       .from("squad_players")

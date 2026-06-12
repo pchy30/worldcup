@@ -158,7 +158,10 @@ export default async function SquadPage({ params }: PageProps) {
 
     if (league.knockout_mode) {
       // Knockout mode: any active (non-eliminated) player is available, even if in another squad
+      // but exclude players already in this manager's own squad
+      const myPlayerIds = new Set(mySquad.map((p) => p.id));
       availablePlayers = allPlayers.filter((p) => {
+        if (myPlayerIds.has(p.id)) return false;
         const team = Array.isArray(p.team) ? p.team[0] : p.team;
         return !team?.is_eliminated;
       });
