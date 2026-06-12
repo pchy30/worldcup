@@ -229,8 +229,12 @@ export default async function DashboardPage() {
                   </div>
                 </div>
               </Link>
-              {league.commissioner_id !== user.id && league.draft_status === "pending" && (
-                <LeaveLeagueButton leagueId={league.id} leagueName={league.name} />
+              {league.draft_status === "pending" && (
+                <LeaveLeagueButton
+                  leagueId={league.id}
+                  leagueName={league.name}
+                  isCommissioner={league.commissioner_id === user.id}
+                />
               )}
               </div>
             );
