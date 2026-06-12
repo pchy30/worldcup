@@ -208,7 +208,7 @@ export default function HowToPlayPage() {
           </div>
           <div className="flex items-start gap-3">
             <RefreshCcw className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-gray-300">Transfer windows open every <span className="text-white font-semibold">3 days</span> for 48 hours. You get <span className="text-white font-semibold">2 transfers</span> per window. Transfers must be like-for-like position.</p>
+            <p className="text-sm text-gray-300">Transfer windows open every <span className="text-white font-semibold">3 days</span> for 24 hours. You get <span className="text-white font-semibold">2 transfers</span> per window. Transfers must be like-for-like position.</p>
           </div>
           <div className="flex items-start gap-3">
             <Shield className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
