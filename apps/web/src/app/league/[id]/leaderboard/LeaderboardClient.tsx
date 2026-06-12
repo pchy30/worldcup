@@ -163,152 +163,117 @@ export default function LeaderboardClient({
         </div>
       )}
 
-      {/* Full table */}
-      <div className="card overflow-hidden p-0">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-muted/20">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider w-10">
-                #
-              </th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">
-                Manager
-              </th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">
-                Pts
-              </th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider hidden sm:table-cell">
-                <span className="flex items-center justify-end gap-1">
-                  <Target className="w-3 h-3" /> Goals
-                </span>
-              </th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider hidden sm:table-cell">
-                <span className="flex items-center justify-end gap-1">
-                  <Zap className="w-3 h-3" /> Assists
-                </span>
-              </th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider hidden md:table-cell">
-                Best Player
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {standings.map((standing, idx) => {
-              const rank = idx + 1;
-              const isMe = standing.manager_id === currentUserId;
-              const isExpanded = expandedManager === standing.manager_id;
-              const detail = managerDetails[standing.manager_id];
-
-              return (
-                <React.Fragment key={standing.manager_id}>
-                  <tr
-                    onClick={() => setExpandedManager(isExpanded ? null : standing.manager_id)}
-                    className={`border-b border-muted/10 transition-colors cursor-pointer ${
-                      isMe
-                        ? "bg-accent/5 border-accent/20"
-                        : "hover:bg-primary/20"
-                    } ${isExpanded ? "border-b-0" : ""}`}
-                  >
-                    {/* Rank */}
-                    <td className="px-4 py-3">
-                      {rank <= 3 ? (
-                        <Medal className={`w-4 h-4 ${medalColors[rank - 1] ?? "text-muted"}`} />
-                      ) : (
-                        <span className="text-muted text-sm font-medium">{rank}</span>
-                      )}
-                    </td>
-
-                    {/* Manager */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${isMe ? "bg-accent text-primary" : "bg-surface text-white border border-muted/30"}`}>
-                          {standing.display_name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className={`font-medium text-sm ${isMe ? "text-accent" : "text-white"}`}>
-                          {standing.display_name}
-                          {isMe && <span className="ml-1.5 text-xs text-muted">(you)</span>}
-                        </span>
-                        {isExpanded
-                          ? <ChevronUp className="w-3.5 h-3.5 text-muted ml-1 md:hidden" />
-                          : <ChevronDown className="w-3.5 h-3.5 text-muted ml-1 md:hidden" />}
-                      </div>
-                    </td>
-
-                    {/* Points */}
-                    <td className="px-4 py-3 text-right">
-                      <span className="text-accent font-bold text-base">{standing.total_points}</span>
-                    </td>
-
-                    {/* Goals */}
-                    <td className="px-4 py-3 text-right text-sm text-gray-300 hidden sm:table-cell">
-                      {standing.goals_scored}
-                    </td>
-
-                    {/* Assists */}
-                    <td className="px-4 py-3 text-right text-sm text-gray-300 hidden sm:table-cell">
-                      {standing.assists}
-                    </td>
-
-                    {/* Best player / expand toggle */}
-                    <td className="px-4 py-3 text-right text-sm text-muted hidden md:table-cell">
-                      <div className="flex items-center justify-end gap-2">
-                        <span>{standing.highest_individual_player_points > 0 ? `${standing.highest_individual_player_points} pts` : "—"}</span>
-                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                      </div>
-                    </td>
-                  </tr>
-
-                  {/* Expanded squad + bonus teams */}
-                  {isExpanded && detail && (
-                    <tr key={`${standing.manager_id}-detail`} className={`border-b border-muted/10 ${isMe ? "bg-accent/5" : "bg-primary/30"}`}>
-                      <td colSpan={6} className="px-4 py-4">
-                        {/* Bonus teams */}
-                        {detail.bonusTeams.length > 0 && (
-                          <div className="mb-4">
-                            <div className="flex items-center gap-1.5 mb-2">
-                              <Star className="w-3.5 h-3.5 text-accent" />
-                              <span className="text-xs font-semibold text-muted uppercase tracking-wider">Bonus Teams</span>
-                              <span className="text-xs text-muted ml-1">Win +3 · Draw +1</span>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {detail.bonusTeams.map((t, i) => (
-                                <div key={i} className="flex items-center gap-1.5 bg-surface border border-muted/20 rounded-lg px-2.5 py-1.5">
-                                  {t.flag_url && <img src={t.flag_url} alt={t.code} className="w-6 h-4 object-cover rounded" />}
-                                  <span className="text-sm text-white font-medium">{t.name}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Squad */}
-                        <div className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Squad</div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
-                          {detail.squad
-                            .sort((a, b) => b.total_points - a.total_points)
-                            .map((player) => (
-                              <div key={player.id} className="flex items-center gap-2 bg-surface border border-muted/20 rounded-lg px-3 py-2">
-                                <PositionBadge position={player.position} />
-                                <span className="text-sm text-white font-medium flex-1 truncate">{player.name}</span>
-                                <span className="text-accent font-bold text-sm flex-shrink-0">{player.total_points} pts</span>
-                              </div>
-                            ))}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-
+      {/* Manager cards */}
+      <div className="space-y-2">
         {standings.length === 0 && (
-          <div className="text-center text-muted py-12 text-sm">
+          <div className="card text-center py-12 text-sm text-muted">
             <Trophy className="w-8 h-8 mx-auto mb-2 opacity-30" />
             No standings data yet.
           </div>
         )}
+
+        {standings.map((standing, idx) => {
+          const rank = idx + 1;
+          const isMe = standing.manager_id === currentUserId;
+          const isExpanded = expandedManager === standing.manager_id;
+          const detail = managerDetails[standing.manager_id];
+
+          return (
+            <div
+              key={standing.manager_id}
+              className={`rounded-xl border overflow-hidden transition-all ${
+                isMe ? "border-accent/40 bg-accent/5" : "border-white/10 bg-surface"
+              }`}
+            >
+              {/* Row — always visible */}
+              <button
+                onClick={() => setExpandedManager(isExpanded ? null : standing.manager_id)}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left"
+              >
+                {/* Rank */}
+                <div className="w-7 flex-shrink-0 flex justify-center">
+                  {rank <= 3
+                    ? <Medal className={`w-4 h-4 ${medalColors[rank - 1]}`} />
+                    : <span className="text-muted text-sm font-medium">{rank}</span>}
+                </div>
+
+                {/* Avatar */}
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${isMe ? "bg-accent text-primary" : "bg-primary text-white border border-muted/30"}`}>
+                  {standing.display_name.charAt(0).toUpperCase()}
+                </div>
+
+                {/* Name */}
+                <div className="flex-1 min-w-0">
+                  <p className={`font-semibold text-sm truncate ${isMe ? "text-accent" : "text-white"}`}>
+                    {standing.display_name}
+                    {isMe && <span className="text-xs text-muted font-normal ml-1">(you)</span>}
+                  </p>
+                  <div className="flex items-center gap-3 mt-0.5">
+                    <span className="text-xs text-muted flex items-center gap-0.5">
+                      <Target className="w-3 h-3" /> {standing.goals_scored}
+                    </span>
+                    <span className="text-xs text-muted flex items-center gap-0.5">
+                      <Zap className="w-3 h-3" /> {standing.assists}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Points + chevron */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-accent font-extrabold text-lg">{standing.total_points}</span>
+                  <span className="text-xs text-muted">pts</span>
+                  {isExpanded
+                    ? <ChevronUp className="w-4 h-4 text-muted" />
+                    : <ChevronDown className="w-4 h-4 text-muted" />}
+                </div>
+              </button>
+
+              {/* Expanded detail */}
+              {isExpanded && (
+                <div className="border-t border-muted/20 px-4 py-4 space-y-4">
+                  {/* Bonus teams */}
+                  {detail?.bonusTeams?.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Star className="w-3.5 h-3.5 text-accent" />
+                        <span className="text-xs font-semibold text-muted uppercase tracking-wider">Bonus Teams</span>
+                        <span className="text-xs text-muted">· Win +3, Draw +1</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {detail.bonusTeams.map((t, i) => (
+                          <div key={i} className="flex items-center gap-1.5 bg-primary border border-muted/20 rounded-lg px-2.5 py-1.5">
+                            {t.flag_url && <img src={t.flag_url} alt={t.code} className="w-6 h-4 object-cover rounded" />}
+                            <span className="text-sm text-white font-medium">{t.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Squad */}
+                  {detail?.squad?.length > 0 ? (
+                    <div>
+                      <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Squad</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                        {[...detail.squad]
+                          .sort((a, b) => b.total_points - a.total_points)
+                          .map((player) => (
+                            <div key={player.id} className="flex items-center gap-2 bg-primary border border-muted/20 rounded-lg px-3 py-2">
+                              <PositionBadge position={player.position} />
+                              <span className="text-sm text-white font-medium flex-1 truncate">{player.name}</span>
+                              <span className="text-accent font-bold text-sm flex-shrink-0">{player.total_points} pts</span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted">No squad data yet.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
