@@ -195,7 +195,7 @@ export default function CreateLeaguePage() {
               <input
                 id="max_participants"
                 type="range"
-                min={4}
+                min={2}
                 max={20}
                 step={1}
                 value={form.max_participants}
