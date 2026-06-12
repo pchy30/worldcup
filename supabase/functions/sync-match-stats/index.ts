@@ -127,13 +127,18 @@ Deno.serve(async (_req) => {
       const awayTeamId = match.awayTeam?.id;
       if (!homeTeamId || !awayTeamId) continue;
 
-      if (homeGoals > awayGoals) {
+      // In knockout matches, use score.winner (accounts for extra time / penalties)
+      // score.winner is "HOME_TEAM", "AWAY_TEAM", or "DRAW" (group stage only)
+      const winner = match.score?.winner;
+
+      if (winner === "HOME_TEAM" || (!winner && homeGoals > awayGoals)) {
         const prev = teamResultMap.get(homeTeamId) ?? { wins: 0, draws: 0 };
         teamResultMap.set(homeTeamId, { ...prev, wins: prev.wins + 1 });
-      } else if (awayGoals > homeGoals) {
+      } else if (winner === "AWAY_TEAM" || (!winner && awayGoals > homeGoals)) {
         const prev = teamResultMap.get(awayTeamId) ?? { wins: 0, draws: 0 };
         teamResultMap.set(awayTeamId, { ...prev, wins: prev.wins + 1 });
-      } else {
+      } else if (winner === "DRAW" || (!winner && homeGoals === awayGoals)) {
+        // Only award draw points in group stage (DRAW only appears when no winner is determined)
         const prevH = teamResultMap.get(homeTeamId) ?? { wins: 0, draws: 0 };
         teamResultMap.set(homeTeamId, { ...prevH, draws: prevH.draws + 1 });
         const prevA = teamResultMap.get(awayTeamId) ?? { wins: 0, draws: 0 };
