@@ -27,16 +27,26 @@ const steps = [
   },
   {
     number: "02",
+    icon: Star,
+    title: "Pick your bonus national teams",
+    description:
+      "Before the player draft, each manager picks 2 national teams in snake order. You're offered 4 random teams to choose from each time. If your team wins a match you earn +3 pts, a draw earns +1 pt — on top of your player points.",
+    color: "text-accent",
+    bg: "bg-accent/10",
+    border: "border-accent/20",
+  },
+  {
+    number: "03",
     icon: Zap,
     title: "Draft your 11-player squad",
     description:
-      "The commissioner kicks off the draft. Picks go in snake order — 1→2→3→…→3→2→1→repeat — so it's fair. Each manager picks 11 players total: 1 GK, 4 DEF, 3 MID, 3 FWD.",
+      "Picks go in snake order — 1→2→3→…→3→2→1→repeat — so it's fair. Each manager picks 11 players: 1 GK, 4 DEF, 3 MID, 3 FWD. You can't pick more than 2 players from the same nation.",
     color: "text-blue-400",
     bg: "bg-blue-400/10",
     border: "border-blue-400/20",
   },
   {
-    number: "03",
+    number: "04",
     icon: BarChart2,
     title: "Earn points as the tournament plays",
     description:
@@ -46,11 +56,11 @@ const steps = [
     border: "border-green-400/20",
   },
   {
-    number: "04",
+    number: "05",
     icon: RefreshCcw,
     title: "Use transfer windows",
     description:
-      "Transfer windows open every few days. Drop players from eliminated nations and bring in in-form stars before your rivals do.",
+      "Transfer windows open every 3 days and last 48 hours. You get 2 transfers per window. Drop players from eliminated nations and bring in in-form stars — you can only swap like-for-like positions.",
     color: "text-purple-400",
     bg: "bg-purple-400/10",
     border: "border-purple-400/20",
@@ -58,10 +68,11 @@ const steps = [
 ];
 
 const scoringRules = [
-  { icon: Target, label: "Goal scored (any outfield player)", points: "+4 pts", color: "text-green-400" },
-  { icon: Target, label: "Goal scored (goalkeeper)", points: "+6 pts", color: "text-green-400" },
+  { icon: Target, label: "Goal scored", points: "+4 pts", color: "text-green-400" },
   { icon: Zap, label: "Assist", points: "+3 pts", color: "text-blue-400" },
-  { icon: Shield, label: "Clean sheet (GK or DEF)", points: "+3 pts", color: "text-purple-400" },
+  { icon: Shield, label: "Clean sheet (GK or DEF only)", points: "+3 pts", color: "text-purple-400" },
+  { icon: Star, label: "Bonus team win", points: "+3 pts", color: "text-accent" },
+  { icon: Star, label: "Bonus team draw", points: "+1 pt", color: "text-accent" },
 ];
 
 const draftModes = [
@@ -84,11 +95,12 @@ const draftModes = [
 ];
 
 const tips = [
-  "Spread your picks across different nations — don't stack from one team that might go out early.",
+  "Pick a strong nation in the team phase — a team that goes deep in the tournament can earn you 7+ bonus points from wins alone.",
+  "Spread your player picks across different nations — don't stack from one team that might go out early.",
   "GKs and defenders score clean sheet points. A top GK from a defensive side can rack up big points.",
-  "Use early picks on clinical strikers — goals score the most points.",
-  "Watch the transfer window: dropping players from eliminated teams early gives you better picks.",
-  "In snake drafts, the manager picking last in round 1 picks first in round 2 — use that to grab two stars back-to-back.",
+  "Use early picks on clinical strikers — goals score the most points at +4 each.",
+  "Watch the transfer window: dropping players from eliminated teams early gives you better picks than waiting.",
+  "In snake drafts, the manager picking last in round 1 picks first in round 2 — use that double pick to grab two stars back-to-back.",
 ];
 
 export default function HowToPlayPage() {
@@ -192,11 +204,11 @@ export default function HowToPlayPage() {
           </div>
           <div className="flex items-start gap-3">
             <UserPlus className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-gray-300">No position limits — you can pick all forwards if you want, but GK/DEF miss out on clean sheet points.</p>
+            <p className="text-sm text-gray-300">Max <span className="text-white font-semibold">2 players</span> from the same nation in your squad.</p>
           </div>
           <div className="flex items-start gap-3">
             <RefreshCcw className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-gray-300">Transfer windows open periodically. Each window lets you swap players while it&apos;s open — first come, first served on undrafted players.</p>
+            <p className="text-sm text-gray-300">Transfer windows open every <span className="text-white font-semibold">3 days</span> for 48 hours. You get <span className="text-white font-semibold">2 transfers</span> per window. Transfers must be like-for-like position.</p>
           </div>
           <div className="flex items-start gap-3">
             <Shield className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
