@@ -128,24 +128,48 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  // 7. Max 2 players per national team after transfer
+  // 7. Fetch current squad for position + team count checks
   const { data: mySquad } = await supabase
     .from("squad_players")
-    .select("player_id, player:players(team_id)")
+    .select("player_id, player:players(team_id, position)")
     .eq("league_id", leagueId)
     .eq("manager_id", user.id);
+
+  // Fetch the player being transferred out to get their position
+  const { data: playerOut } = await supabase
+    .from("players")
+    .select("id, position, team_id")
+    .eq("id", player_out_id)
+    .single();
 
   const squadWithoutOut = (mySquad ?? []).filter(
     (sp) => sp.player_id !== player_out_id
   );
 
   const teamCounts: Record<string, number> = {};
+  const positionCounts: Record<string, number> = {};
   for (const sp of squadWithoutOut) {
     const p = Array.isArray(sp.player) ? sp.player[0] : sp.player;
     const teamId = (p as { team_id: string } | null)?.team_id ?? "";
+    const pos = (p as { position: string } | null)?.position ?? "";
     teamCounts[teamId] = (teamCounts[teamId] ?? 0) + 1;
+    positionCounts[pos] = (positionCounts[pos] ?? 0) + 1;
   }
 
+  // Position limits — only enforce if swapping to a different position
+  const POSITION_LIMITS: Record<string, number> = { GK: 1, DEF: 4, MID: 3, FWD: 3 };
+  if (playerOut?.position !== playerIn.position) {
+    const posLimit = POSITION_LIMITS[playerIn.position] ?? 99;
+    const currentPosCount = positionCounts[playerIn.position] ?? 0;
+    if (currentPosCount >= posLimit) {
+      return NextResponse.json(
+        { error: `You already have the maximum ${posLimit} ${playerIn.position} players. Transfer out a ${playerIn.position} first.` },
+        { status: 400 }
+      );
+    }
+  }
+
+  // Max 2 players per national team after transfer
   const newTeamCount = (teamCounts[playerIn.team_id] ?? 0) + 1;
   if (newTeamCount > 2) {
     return NextResponse.json(

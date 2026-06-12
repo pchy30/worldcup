@@ -42,15 +42,17 @@ export default function TransferPanel({
 
   const filteredAvailable = useMemo(() => {
     let list = available;
-    if (positionFilter !== "ALL") {
-      list = list.filter((p) => p.position === positionFilter);
+    // If a player out is selected, restrict to same position
+    const effectivePositionFilter = playerOut ? playerOut.position : positionFilter;
+    if (effectivePositionFilter !== "ALL") {
+      list = list.filter((p) => p.position === effectivePositionFilter);
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter((p) => p.name.toLowerCase().includes(q));
     }
     return list;
-  }, [available, positionFilter, searchQuery]);
+  }, [available, positionFilter, searchQuery, playerOut]);
 
   const handleSubmit = async () => {
     if (!playerOut || !playerIn) {
@@ -164,11 +166,11 @@ export default function TransferPanel({
                 player={player}
                 selectable
                 selected={playerOut?.id === player.id}
-                onClick={() =>
-                  setPlayerOut(
-                    playerOut?.id === player.id ? null : player
-                  )
-                }
+                onClick={() => {
+                  const next = playerOut?.id === player.id ? null : player;
+                  setPlayerOut(next);
+                  setPlayerIn(null);
+                }}
               />
             ))}
           </div>

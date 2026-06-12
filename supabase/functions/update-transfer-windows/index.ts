@@ -56,7 +56,7 @@ Deno.serve(async (_req) => {
 
   for (const league of expiredLeagues ?? []) {
     const nextIndex = league.current_pick_index + 1;
-    if (nextIndex >= league.draft_order.length * 7) {
+    if (nextIndex >= league.draft_order.length * 11) {
       await supabase
         .from("leagues")
         .update({ draft_status: "completed" })
