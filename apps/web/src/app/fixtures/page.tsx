@@ -156,29 +156,44 @@ function MatchDay({ date, matches }: { date: string; matches: Match[] }) {
   );
 }
 
+const SHORT_NAMES: Record<string, string> = {
+  "United States": "USA",
+  "Saudi Arabia": "Saudi",
+  "South Korea": "Korea",
+  "Ivory Coast": "C. d'Ivoire",
+  "Netherlands": "Netherlands",
+};
+
+function shortName(name: string): string {
+  return SHORT_NAMES[name] ?? name;
+}
+
 function MatchCard({ match: m }: { match: Match }) {
   const isFinished = m.status === "FINISHED";
   const isLive = m.status === "IN_PLAY" || m.status === "PAUSED";
   const homeScore = m.score.fullTime.home;
   const awayScore = m.score.fullTime.away;
+  const homeWon = isFinished && homeScore !== null && awayScore !== null && homeScore > awayScore;
+  const awayWon = isFinished && homeScore !== null && awayScore !== null && awayScore > homeScore;
 
   return (
-    <div className={`card py-3 px-4 ${isLive ? "border-accent/40" : ""}`}>
-      <div className="flex items-center justify-between gap-2">
+    <div className={`card py-3 px-3 sm:px-4 ${isLive ? "border-accent/40" : ""}`}>
+      <div className="flex items-center gap-2">
         {/* Home team */}
-        <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
           {m.homeTeam.crest && (
             <img src={m.homeTeam.crest} alt={m.homeTeam.name} className="w-6 h-6 object-contain flex-shrink-0" />
           )}
-          <span className={`text-sm font-semibold truncate ${isFinished && homeScore !== null && awayScore !== null && homeScore > awayScore ? "text-white" : "text-gray-300"}`}>
-            {m.homeTeam.name}
+          <span className={`text-sm font-semibold truncate ${homeWon ? "text-white" : "text-gray-300"}`}>
+            <span className="hidden sm:inline">{m.homeTeam.name}</span>
+            <span className="sm:hidden">{shortName(m.homeTeam.name)}</span>
           </span>
         </div>
 
         {/* Score / time */}
-        <div className="flex-shrink-0 text-center w-20">
+        <div className="flex-shrink-0 text-center w-[72px]">
           {isFinished ? (
-            <span className="text-white font-extrabold text-lg">
+            <span className="text-white font-extrabold text-base">
               {homeScore} – {awayScore}
             </span>
           ) : isLive ? (
@@ -189,13 +204,14 @@ function MatchCard({ match: m }: { match: Match }) {
               <p className="text-muted text-[10px]">BST</p>
             </div>
           )}
-          <p className="text-muted text-[10px] mt-0.5">{formatStage(m.stage, m.group)}</p>
+          <p className="text-muted text-[10px] mt-0.5 leading-tight">{formatStage(m.stage, m.group)}</p>
         </div>
 
         {/* Away team */}
-        <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-          <span className={`text-sm font-semibold truncate ${isFinished && homeScore !== null && awayScore !== null && awayScore > homeScore ? "text-white" : "text-gray-300"}`}>
-            {m.awayTeam.name}
+        <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
+          <span className={`text-sm font-semibold truncate text-right ${awayWon ? "text-white" : "text-gray-300"}`}>
+            <span className="hidden sm:inline">{m.awayTeam.name}</span>
+            <span className="sm:hidden">{shortName(m.awayTeam.name)}</span>
           </span>
           {m.awayTeam.crest && (
             <img src={m.awayTeam.crest} alt={m.awayTeam.name} className="w-6 h-6 object-contain flex-shrink-0" />
