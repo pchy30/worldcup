@@ -39,7 +39,14 @@ export default async function LeaderboardPage({ params }: PageProps) {
     .eq("league_id", id);
 
   if (viewData && viewData.length > 0) {
-    standings = viewData as ManagerStanding[];
+    standings = viewData.map((r) => ({
+      manager_id: r.user_id,
+      display_name: r.display_name,
+      total_points: r.total_points ?? 0,
+      goals_scored: r.goals_scored ?? 0,
+      assists: r.assists ?? 0,
+      highest_individual_player_points: r.highest_individual_player_points ?? 0,
+    })) as ManagerStanding[];
   } else {
     // Fallback: build from league_members
     const { data: members } = await supabase
