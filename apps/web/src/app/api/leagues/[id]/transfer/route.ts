@@ -142,6 +142,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     .eq("id", player_out_id)
     .single();
 
+  if (!playerOut) {
+    return NextResponse.json({ error: "Player to transfer out not found." }, { status: 404 });
+  }
+
   const squadWithoutOut = (mySquad ?? []).filter(
     (sp) => sp.player_id !== player_out_id
   );
@@ -158,7 +162,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
   // Position limits — only enforce if swapping to a different position
   const POSITION_LIMITS: Record<string, number> = { GK: 1, DEF: 4, MID: 3, FWD: 3 };
-  if (playerOut?.position !== playerIn.position) {
+  if (playerOut.position !== playerIn.position) {
     const posLimit = POSITION_LIMITS[playerIn.position] ?? 99;
     const currentPosCount = positionCounts[playerIn.position] ?? 0;
     if (currentPosCount >= posLimit) {

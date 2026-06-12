@@ -1,6 +1,6 @@
 import { Calendar } from "lucide-react";
 
-const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_KEY!;
+const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_KEY ?? "";
 
 interface Match {
   id: number;
@@ -53,19 +53,23 @@ export default async function FixturesPage() {
   let matches: Match[] = [];
   let error = false;
 
-  try {
-    const res = await fetch("https://api.football-data.org/v4/competitions/WC/matches", {
-      headers: { "X-Auth-Token": FOOTBALL_DATA_KEY },
-      next: { revalidate: 1800 },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      matches = data.matches ?? [];
-    } else {
+  if (!FOOTBALL_DATA_KEY) {
+    error = true;
+  } else {
+    try {
+      const res = await fetch("https://api.football-data.org/v4/competitions/WC/matches", {
+        headers: { "X-Auth-Token": FOOTBALL_DATA_KEY },
+        next: { revalidate: 1800 },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        matches = data.matches ?? [];
+      } else {
+        error = true;
+      }
+    } catch {
       error = true;
     }
-  } catch {
-    error = true;
   }
 
   // Group by date

@@ -241,7 +241,8 @@ export default function TransferPanel({
               </p>
             )}
             {filteredAvailable.map((player) => {
-              const fixture = player.team?.name ? nextFixtures[player.team.name] : undefined;
+              const teamName = Array.isArray(player.team) ? player.team[0]?.name : player.team?.name;
+              const fixture = teamName ? nextFixtures[teamName] : undefined;
               return (
                 <div key={player.id}>
                   <PlayerCard

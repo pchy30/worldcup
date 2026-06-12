@@ -147,7 +147,7 @@ export default async function SquadPage({ params }: PageProps) {
 
   // All available (undrafted) players if window is open
   let availablePlayers: Player[] = [];
-  let nextFixtures: Record<number, NextFixture> = {};
+  let nextFixtures: Record<string, NextFixture> = {};
   if (openWindow) {
     const { data: allSquads } = await supabase
       .from("squad_players")
