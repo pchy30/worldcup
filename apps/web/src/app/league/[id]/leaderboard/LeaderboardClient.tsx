@@ -5,7 +5,16 @@ import { createClient } from "@/lib/supabase/client";
 import type { League, ManagerStanding } from "@wcf/shared";
 import { rankManagers } from "@wcf/shared";
 import Link from "next/link";
-import { Trophy, Medal, Target, Zap, ArrowRightLeft, ChevronDown, ChevronUp, Star } from "lucide-react";
+import {
+  Trophy,
+  Target,
+  Zap,
+  ArrowRightLeft,
+  ChevronDown,
+  ChevronUp,
+  Star,
+  Shield,
+} from "lucide-react";
 import PositionBadge from "@/components/PositionBadge";
 import type { PlayerPosition } from "@wcf/shared";
 
@@ -36,10 +45,10 @@ interface LeaderboardClientProps {
   managerDetails: Record<string, ManagerDetail>;
 }
 
-const medalColors = [
-  "text-yellow-400",  // 1st
-  "text-gray-300",    // 2nd
-  "text-amber-600",   // 3rd
+const RANK_STYLES = [
+  { medal: "🥇", color: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400/30" },
+  { medal: "🥈", color: "text-gray-300",   bg: "bg-gray-300/10",   border: "border-gray-300/20"  },
+  { medal: "🥉", color: "text-amber-600",  bg: "bg-amber-600/10",  border: "border-amber-600/20" },
 ];
 
 export default function LeaderboardClient({
@@ -90,138 +99,134 @@ export default function LeaderboardClient({
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [league.id, supabase]);
 
+  const myRank = standings.findIndex((s) => s.manager_id === currentUserId) + 1;
+
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-start justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">{league.name}</h1>
-          <p className="text-muted mt-1">Leaderboard</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight">{league.name}</h1>
+          <p className="text-muted mt-1 text-sm">
+            {standings.length} manager{standings.length !== 1 ? "s" : ""} · updates live
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href={`/league/${league.id}/squad`}
-            className="btn-secondary text-sm py-2 px-4 flex items-center gap-2"
-          >
-            <ArrowRightLeft className="w-4 h-4" />
-            My Squad
-          </Link>
-        </div>
+        <Link
+          href={`/league/${league.id}/squad`}
+          className="btn-secondary text-sm py-2 px-3 flex items-center gap-1.5 flex-shrink-0"
+        >
+          <ArrowRightLeft className="w-4 h-4" />
+          My Squad
+        </Link>
       </div>
 
-      {/* Top 3 podium */}
-      {standings.length >= 3 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
-          {[standings[1], standings[0], standings[2]].map((standing, visualIdx) => {
-            const actualRank = standings.indexOf(standing) + 1;
-            const heightClass =
-              actualRank === 1
-                ? "pt-8"
-                : actualRank === 2
-                  ? "pt-12"
-                  : "pt-16";
-            const isMe = standing.manager_id === currentUserId;
-
-            return (
-              <div
-                key={standing.manager_id}
-                className={`card text-center ${heightClass} ${
-                  isMe ? "border-accent/50 shadow-accent/10 shadow-lg" : ""
-                }`}
-              >
-                <div
-                  className={`w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center text-lg font-bold border-2 ${
-                    isMe
-                      ? "bg-accent text-primary border-accent"
-                      : "bg-surface text-white border-muted/40"
-                  }`}
-                >
-                  {standing.display_name.charAt(0).toUpperCase()}
-                </div>
-                <p
-                  className={`font-bold text-sm mb-1 truncate ${
-                    medalColors[actualRank - 1] ?? "text-white"
-                  }`}
-                >
-                  #{actualRank}
-                </p>
-                <p className="text-white font-semibold text-sm truncate mb-1">
-                  {standing.display_name}
-                </p>
-                <p className="text-accent font-extrabold text-xl">
-                  {standing.total_points}
-                </p>
-                <p className="text-muted text-xs">pts</p>
-              </div>
-            );
-          })}
+      {/* Your position banner */}
+      {myRank > 0 && (
+        <div className="flex items-center justify-between bg-accent/10 border border-accent/25 rounded-xl px-4 py-3 mb-6">
+          <div className="flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-accent" />
+            <span className="text-sm font-semibold text-white">Your position</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted">
+              #{myRank} of {standings.length}
+            </span>
+            <span className="text-accent font-extrabold text-lg">
+              {standings[myRank - 1]?.total_points ?? 0} pts
+            </span>
+          </div>
         </div>
       )}
 
-      {/* Manager cards */}
-      <div className="space-y-2">
-        {standings.length === 0 && (
-          <div className="card text-center py-12 text-sm text-muted">
-            <Trophy className="w-8 h-8 mx-auto mb-2 opacity-30" />
-            No standings data yet.
-          </div>
-        )}
+      {/* Empty state */}
+      {standings.length === 0 && (
+        <div className="card text-center py-16">
+          <Trophy className="w-8 h-8 mx-auto mb-3 text-muted opacity-40" />
+          <p className="text-muted text-sm">No standings yet.</p>
+        </div>
+      )}
 
+      {/* Rankings list */}
+      <div className="space-y-2">
         {standings.map((standing, idx) => {
           const rank = idx + 1;
           const isMe = standing.manager_id === currentUserId;
           const isExpanded = expandedManager === standing.manager_id;
           const detail = managerDetails[standing.manager_id];
+          const rankStyle = RANK_STYLES[rank - 1];
+          const leader = standings[0];
+          const gap = leader ? leader.total_points - standing.total_points : 0;
 
           return (
             <div
               key={standing.manager_id}
-              className={`rounded-xl border overflow-hidden transition-all ${
-                isMe ? "border-accent/40 bg-accent/5" : "border-white/10 bg-surface"
+              className={`rounded-2xl border overflow-hidden transition-all duration-200 ${
+                isMe
+                  ? "border-accent/40 bg-accent/5"
+                  : "border-white/8 bg-surface"
               }`}
             >
-              {/* Row — always visible */}
+              {/* Main row */}
               <button
                 onClick={() => setExpandedManager(isExpanded ? null : standing.manager_id)}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-white/5"
+                className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-white/5 transition-colors"
               >
                 {/* Rank */}
-                <div className="w-7 flex-shrink-0 flex justify-center">
-                  {rank <= 3
-                    ? <Medal className={`w-4 h-4 ${medalColors[rank - 1]}`} />
-                    : <span className="text-muted text-sm font-medium">{rank}</span>}
+                <div className="w-8 flex-shrink-0 text-center">
+                  {rank <= 3 ? (
+                    <span className="text-lg leading-none">{rankStyle.medal}</span>
+                  ) : (
+                    <span className="text-sm font-bold text-muted">{rank}</span>
+                  )}
                 </div>
 
                 {/* Avatar */}
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${isMe ? "bg-accent text-primary" : "bg-primary text-white border border-muted/30"}`}>
+                <div
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                    isMe
+                      ? "bg-accent text-primary"
+                      : rank <= 3
+                        ? `${rankStyle.bg} ${rankStyle.color} border ${rankStyle.border}`
+                        : "bg-white/8 text-white border border-white/10"
+                  }`}
+                >
                   {standing.display_name.charAt(0).toUpperCase()}
                 </div>
 
-                {/* Name */}
+                {/* Name + stats */}
                 <div className="flex-1 min-w-0">
-                  <p className={`font-semibold text-sm truncate ${isMe ? "text-accent" : "text-white"}`}>
-                    {standing.display_name}
-                    {isMe && <span className="text-xs text-muted font-normal ml-1">(you)</span>}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <p className={`font-semibold text-sm truncate ${isMe ? "text-accent" : "text-white"}`}>
+                      {standing.display_name}
+                    </p>
+                    {isMe && (
+                      <span className="text-[10px] text-muted font-normal flex-shrink-0">you</span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-3 mt-0.5">
                     <span className="text-xs text-muted flex items-center gap-0.5">
-                      <Target className="w-3 h-3" /> {standing.goals_scored}
+                      <Target className="w-3 h-3" />{standing.goals_scored}g
                     </span>
                     <span className="text-xs text-muted flex items-center gap-0.5">
-                      <Zap className="w-3 h-3" /> {standing.assists}
+                      <Zap className="w-3 h-3" />{standing.assists}a
                     </span>
+                    {rank > 1 && gap > 0 && (
+                      <span className="text-xs text-muted">−{gap} pts</span>
+                    )}
                   </div>
                 </div>
 
-                {/* Points + chevron */}
+                {/* Points */}
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-accent font-extrabold text-lg">{standing.total_points}</span>
-                  <span className="text-xs text-muted">pts</span>
+                  <div className="text-right">
+                    <p className={`font-extrabold text-xl leading-none ${isMe ? "text-accent" : rank === 1 ? "text-yellow-400" : "text-white"}`}>
+                      {standing.total_points}
+                    </p>
+                    <p className="text-[10px] text-muted mt-0.5">pts</p>
+                  </div>
                   {isExpanded
                     ? <ChevronUp className="w-4 h-4 text-muted" />
                     : <ChevronDown className="w-4 h-4 text-muted" />}
@@ -230,19 +235,20 @@ export default function LeaderboardClient({
 
               {/* Expanded detail */}
               {isExpanded && (
-                <div className="border-t border-muted/20 px-4 py-4 space-y-4">
+                <div className="border-t border-white/8 px-4 py-4 space-y-4 bg-black/10">
                   {/* Bonus teams */}
                   {detail?.bonusTeams?.length > 0 && (
                     <div>
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <Star className="w-3.5 h-3.5 text-accent" />
-                        <span className="text-xs font-semibold text-muted uppercase tracking-wider">Bonus Teams</span>
-                        <span className="text-xs text-muted">· Win +3, Draw +1</span>
-                      </div>
+                      <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <Star className="w-3 h-3 text-accent" /> Bonus Teams
+                        <span className="font-normal normal-case">· Win +3, Draw +1</span>
+                      </p>
                       <div className="flex flex-wrap gap-2">
                         {detail.bonusTeams.map((t, i) => (
-                          <div key={i} className="flex items-center gap-1.5 bg-primary border border-muted/20 rounded-lg px-2.5 py-1.5">
-                            {t.flag_url && <img src={t.flag_url} alt={t.code} className="w-6 h-4 object-cover rounded" />}
+                          <div key={i} className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5">
+                            {t.flag_url && (
+                              <img src={t.flag_url} alt={t.code} className="w-6 h-4 object-cover rounded" />
+                            )}
                             <span className="text-sm text-white font-medium">{t.name}</span>
                           </div>
                         ))}
@@ -253,15 +259,34 @@ export default function LeaderboardClient({
                   {/* Squad */}
                   {detail?.squad?.length > 0 ? (
                     <div>
-                      <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Squad</p>
+                      <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <Shield className="w-3 h-3" /> Squad · sorted by points
+                      </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                         {[...detail.squad]
                           .sort((a, b) => b.total_points - a.total_points)
                           .map((player) => (
-                            <div key={player.id} className="flex items-center gap-2 bg-primary border border-muted/20 rounded-lg px-3 py-2">
+                            <div
+                              key={player.id}
+                              className="flex items-center gap-2 bg-white/5 border border-white/8 rounded-xl px-3 py-2"
+                            >
                               <PositionBadge position={player.position} />
                               <span className="text-sm text-white font-medium flex-1 truncate">{player.name}</span>
-                              <span className="text-accent font-bold text-sm flex-shrink-0">{player.total_points} pts</span>
+                              <div className="flex items-center gap-2 flex-shrink-0 text-xs text-muted">
+                                {player.goals > 0 && (
+                                  <span className="flex items-center gap-0.5 text-green-400">
+                                    <Target className="w-3 h-3" />{player.goals}
+                                  </span>
+                                )}
+                                {player.assists > 0 && (
+                                  <span className="flex items-center gap-0.5 text-blue-400">
+                                    <Zap className="w-3 h-3" />{player.assists}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-accent font-bold text-sm flex-shrink-0">
+                                {player.total_points}
+                              </span>
                             </div>
                           ))}
                       </div>
