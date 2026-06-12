@@ -57,18 +57,32 @@ export async function POST(request: NextRequest) {
       freeTransfersAwarded++;
 
       // Fetch current value and increment
-      const { data: member } = await adminSupabase
+      const { data: member, error: memberError } = await adminSupabase
         .from("league_members")
         .select("free_transfers")
         .eq("user_id", row.manager_id)
         .eq("league_id", row.league_id)
-        .single();
+        .maybeSingle();
 
-      await adminSupabase
+      if (memberError) {
+        console.error(`Failed to fetch league_member for ${row.manager_id} in league ${row.league_id}:`, memberError.message);
+        continue;
+      }
+      if (!member) {
+        console.warn(`No league_member row for manager ${row.manager_id} in league ${row.league_id} — skipping`);
+        continue;
+      }
+
+      const { error: updateError } = await adminSupabase
         .from("league_members")
-        .update({ free_transfers: (member?.free_transfers ?? 0) + 1 })
+        .update({ free_transfers: member.free_transfers + 1 })
         .eq("user_id", row.manager_id)
         .eq("league_id", row.league_id);
+
+      if (updateError) {
+        console.error(`Failed to update free_transfers for ${row.manager_id}:`, updateError.message);
+        freeTransfersAwarded--; // undo the count since the update failed
+      }
     }
   }
 

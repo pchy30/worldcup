@@ -88,21 +88,20 @@ export default function TransferPanel({
         return;
       }
 
-      // Update squad and available lists locally — no full page refresh needed
-      setSquad((prev) => {
-        const next = prev.filter((p) => p.id !== playerOut!.id);
-        const newPlayer = (data.squad ?? [])
-          .map((r: { player: Player }) => r.player)
-          .find((p: Player) => p.id === playerIn!.id);
-        return newPlayer ? [...next, newPlayer] : next;
-      });
+      // Capture current selections before clearing state
+      const transferredOut = playerOut!;
+      const transferredIn = playerIn!;
+
+      // Update squad and available lists locally
+      setSquad((prev) => [...prev.filter((p) => p.id !== transferredOut.id), transferredIn]);
       setAvailable((prev) => [
-        ...prev.filter((p) => p.id !== playerIn!.id),
-        playerOut!,
+        ...prev.filter((p) => p.id !== transferredIn.id),
+        transferredOut,
       ]);
       if (isWindowOpen) setTransfersUsed((n) => n + 1);
       if (data.free_transfers_remaining !== undefined) setFreeTransfers(data.free_transfers_remaining);
       setSuccess(true);
+      setTimeout(() => setSuccess(false), 4000);
       setPlayerOut(null);
       setPlayerIn(null);
     } catch {

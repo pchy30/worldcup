@@ -181,7 +181,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   }
 
   // 9. Player coming in must be from an active (non-eliminated) nation
-  if ((playerIn.team as { is_eliminated: boolean } | null)?.is_eliminated) {
+  const playerInTeam = Array.isArray(playerIn.team) ? playerIn.team[0] : playerIn.team;
+  if ((playerInTeam as { is_eliminated: boolean } | null)?.is_eliminated) {
     return NextResponse.json(
       { error: "This player's national team has been eliminated from the tournament." },
       { status: 400 }
@@ -236,7 +237,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json(
         {
           error: `This transfer would give you more than 2 players from ${
-            (playerIn.team as { name: string } | null)?.name ?? playerIn.team_id
+            (playerInTeam as { name: string } | null)?.name ?? playerIn.team_id
           }.`,
         },
         { status: 400 }

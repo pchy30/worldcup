@@ -85,9 +85,10 @@ export default async function SquadPage({ params }: PageProps) {
     .eq("league_id", id)
     .eq("manager_id", user.id);
 
-  const mySquad = ((squadRows as SquadPlayer[]) ?? []).map(
-    (r) => r.player as Player
-  ).filter(Boolean);
+  const mySquad = ((squadRows as SquadPlayer[]) ?? []).map((r) => {
+    const p = Array.isArray(r.player) ? r.player[0] : r.player;
+    return p as Player;
+  }).filter(Boolean);
 
   // Fetch my picked national teams (bonus teams)
   const { data: myBonusTeams } = await supabase
