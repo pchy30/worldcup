@@ -60,7 +60,7 @@ const steps = [
     icon: RefreshCcw,
     title: "Use transfer windows",
     description:
-      "Transfer windows open every 3 days and last 48 hours. You get 2 transfers per window. Drop players from eliminated nations and bring in in-form stars — you can only swap like-for-like positions.",
+      "Transfer windows open every 3 days and last 24 hours. You get 2 transfers per window. Drop players from eliminated nations and bring in in-form stars — you can only swap like-for-like positions. From the Quarter-Finals onward, players are no longer exclusive.",
     color: "text-purple-400",
     bg: "bg-purple-400/10",
     border: "border-purple-400/20",
@@ -213,6 +213,10 @@ export default function HowToPlayPage() {
           <div className="flex items-start gap-3">
             <Shield className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
             <p className="text-sm text-gray-300">Players from <span className="text-white font-semibold">eliminated nations</span> stop earning points. Use transfer windows to replace them.</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <Star className="w-4 h-4 text-accent flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-gray-300">From the <span className="text-white font-semibold">Quarter-Finals</span> onward, players are no longer exclusive — multiple managers can have the same player. The 2-per-nation cap is also lifted.</p>
           </div>
         </div>
       </section>
