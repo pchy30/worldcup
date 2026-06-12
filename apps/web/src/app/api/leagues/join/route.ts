@@ -89,6 +89,8 @@ export async function POST(request: NextRequest) {
     total_points: 0,
     goals_scored: 0,
     assists: 0,
+    bonus_points: 0,
+    free_transfers: 0,
   });
 
   if (memberError) {

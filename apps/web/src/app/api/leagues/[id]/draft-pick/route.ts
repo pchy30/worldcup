@@ -182,11 +182,12 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  // Insert into squad_players
+  // Insert into squad_players with baseline_points = 0 so all future points count
   await supabase.from("squad_players").insert({
     league_id: leagueId,
     manager_id: user.id,
     player_id,
+    baseline_points: 0,
   });
 
   // Advance pick index
@@ -241,6 +242,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
     if (advanceError) {
       console.error("Failed to advance pick index:", advanceError.message);
+      return NextResponse.json(
+        { ...newPick, warning: "Pick recorded but turn advance failed — refresh to sync." },
+        { status: 201 }
+      );
     }
   }
 
