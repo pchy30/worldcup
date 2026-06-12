@@ -9,7 +9,7 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
-const WINDOW_DURATION_HOURS = 48;
+const WINDOW_DURATION_HOURS = 24;
 const WINDOW_INTERVAL_DAYS = 3;
 
 Deno.serve(async (_req) => {
