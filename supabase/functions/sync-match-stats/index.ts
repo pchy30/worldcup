@@ -34,22 +34,28 @@ Deno.serve(async (_req) => {
       });
     }
 
-    // 2. Fetch finished matches to calculate clean sheets
+    // 2. Fetch finished matches
     const matchesData = await apiFetch("/competitions/WC/matches?status=FINISHED");
     const matches = matchesData.matches ?? [];
 
-    // Build map of api_football_id (team) -> clean sheet count
+    // Build per-player clean sheet count — only for players who actually played
+    // cleanSheetMap: player api_football_id -> number of clean sheets
     const cleanSheetMap = new Map<number, number>();
+
     for (const match of matches) {
       const homeGoals = match.score?.fullTime?.home ?? 0;
       const awayGoals = match.score?.fullTime?.away ?? 0;
+      const homeKeptCleanSheet = awayGoals === 0;
+      const awayKeptCleanSheet = homeGoals === 0;
+      if (!homeKeptCleanSheet && !awayKeptCleanSheet) continue;
+
       const homeTeamId = match.homeTeam?.id;
       const awayTeamId = match.awayTeam?.id;
 
-      if (awayGoals === 0 && homeTeamId) {
+      if (homeKeptCleanSheet && homeTeamId) {
         cleanSheetMap.set(homeTeamId, (cleanSheetMap.get(homeTeamId) ?? 0) + 1);
       }
-      if (homeGoals === 0 && awayTeamId) {
+      if (awayKeptCleanSheet && awayTeamId) {
         cleanSheetMap.set(awayTeamId, (cleanSheetMap.get(awayTeamId) ?? 0) + 1);
       }
     }
@@ -60,7 +66,7 @@ Deno.serve(async (_req) => {
       .select("id, api_football_id, position, team:national_teams(api_football_id)")
       .in("position", ["GK", "DEF"]);
 
-    // Update GK/DEF clean sheets
+    // Update GK/DEF — clean sheets by team
     for (const player of players ?? []) {
       const team = Array.isArray(player.team) ? player.team[0] : player.team;
       const teamApiId = (team as { api_football_id: number } | null)?.api_football_id;
