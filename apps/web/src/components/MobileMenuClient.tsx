@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X, LayoutDashboard, HelpCircle, BarChart2 } from "lucide-react";
+import { Menu, X, Users, HelpCircle, BarChart2, Calendar } from "lucide-react";
 
 interface MobileMenuClientProps {
   isLoggedIn: boolean;
@@ -30,10 +30,18 @@ export default function MobileMenuClient({ isLoggedIn }: MobileMenuClientProps) 
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-300 hover:text-white hover:bg-primary/60 transition-colors text-sm font-medium"
               >
-                <LayoutDashboard className="w-4 h-4" />
-                Dashboard
+                <Users className="w-4 h-4" />
+                Leagues
               </Link>
             )}
+            <Link
+              href="/fixtures"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-300 hover:text-white hover:bg-primary/60 transition-colors text-sm font-medium"
+            >
+              <Calendar className="w-4 h-4" />
+              Fixtures
+            </Link>
             <Link
               href="/players"
               onClick={() => setOpen(false)}
