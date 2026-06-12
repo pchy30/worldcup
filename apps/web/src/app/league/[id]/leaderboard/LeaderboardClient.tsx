@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { League, ManagerStanding } from "@wcf/shared";
 import { rankManagers } from "@wcf/shared";
@@ -200,9 +200,8 @@ export default function LeaderboardClient({
               const detail = managerDetails[standing.manager_id];
 
               return (
-                <>
+                <React.Fragment key={standing.manager_id}>
                   <tr
-                    key={standing.manager_id}
                     onClick={() => setExpandedManager(isExpanded ? null : standing.manager_id)}
                     className={`border-b border-muted/10 transition-colors cursor-pointer ${
                       isMe
@@ -229,6 +228,9 @@ export default function LeaderboardClient({
                           {standing.display_name}
                           {isMe && <span className="ml-1.5 text-xs text-muted">(you)</span>}
                         </span>
+                        {isExpanded
+                          ? <ChevronUp className="w-3.5 h-3.5 text-muted ml-1 md:hidden" />
+                          : <ChevronDown className="w-3.5 h-3.5 text-muted ml-1 md:hidden" />}
                       </div>
                     </td>
 
@@ -295,7 +297,7 @@ export default function LeaderboardClient({
                       </td>
                     </tr>
                   )}
-                </>
+                </React.Fragment>
               );
             })}
           </tbody>
