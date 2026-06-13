@@ -111,11 +111,14 @@ export function calculatePlayerPoints(
   goals: number,
   assists: number,
   cleanSheets: number,
-  position: PlayerPosition
+  position: PlayerPosition,
+  yellowCards = 0,
+  redCards = 0
 ): number {
   const cleanSheetPoints =
     position === "GK" || position === "DEF" ? cleanSheets * POINTS.CLEAN_SHEET : 0;
-  return goals * POINTS.GOAL + assists * POINTS.ASSIST + cleanSheetPoints;
+  const cardDeductions = yellowCards * 1 + redCards * 3;
+  return goals * POINTS.GOAL + assists * POINTS.ASSIST + cleanSheetPoints - cardDeductions;
 }
 
 // ─── Tiebreaker helpers ──────────────────────────────────────────────────────

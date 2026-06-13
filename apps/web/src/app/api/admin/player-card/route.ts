@@ -33,11 +33,14 @@ export async function POST(request: NextRequest) {
 
   const adminSupabase = createAdminClient();
 
+  // Sanitise wildcards so "%" or "_" in the input can't match every player
+  const safeName = player_name.replace(/[%_]/g, "\\$&");
+
   // Find player by name (case-insensitive partial match)
   const { data: players, error: searchError } = await adminSupabase
     .from("players")
     .select("id, name, yellow_cards, red_cards, total_points")
-    .ilike("name", `%${player_name}%`);
+    .ilike("name", `%${safeName}%`);
 
   if (searchError) {
     return NextResponse.json({ error: searchError.message }, { status: 500 });
