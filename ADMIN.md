@@ -1,16 +1,36 @@
 # Admin Commands
 
+## Daily Tasks
+
+Every day after matches are played, run these two things manually:
+
+### 1. Assists
+Run the Assists edge function with any players who got new assists that day. You only need to include players with new assists — existing ones are preserved. See the [Set Assists](#set-assists) section below for the full command.
+
+### 2. Cards
+Run the player-card command once for each yellow or red card issued that day. See the [Player Cards](#player-cards) section below.
+
+Everything else (goals, clean sheets, manager points, leaderboard) updates automatically every 30 minutes via cron.
+
+### Credentials
+- **Admin secret:** `Samina2468`
+- **Supabase service key:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwdHNicG5ybXFheGR4Zml1dWl4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTEwMDU1MywiZXhwIjoyMDk2Njc2NTUzfQ.8tzQpYVtjDVkisiQdEV7u15PM9FFDfUB6_c2rWJMcPk`
+- **App URL:** `https://worldcup-web-flame.vercel.app`
+- **Supabase URL:** `https://tptsbpnrmqaxdxfiuuix.supabase.co`
+
+---
+
 ## Eliminate a Team
 
 When a team gets knocked out of the World Cup, run this to mark them as eliminated.
 This allows managers to transfer out players from that team.
 
-Replace `ENG` with the 3-letter team code and `your-admin-secret` with the value from your Vercel env.
+Replace `ENG` with the 3-letter team code from the reference table at the bottom of this file.
 
 ```bash
 curl -X POST https://worldcup-web-flame.vercel.app/api/admin/eliminate-team \
   -H "Content-Type: application/json" \
-  -H "x-admin-secret: your-admin-secret" \
+  -H "x-admin-secret: Samina2468" \
   -d '{"team_code": "ENG"}'
 ```
 
@@ -19,7 +39,7 @@ curl -X POST https://worldcup-web-flame.vercel.app/api/admin/eliminate-team \
 ```bash
 curl -X POST https://worldcup-web-flame.vercel.app/api/admin/eliminate-team \
   -H "Content-Type: application/json" \
-  -H "x-admin-secret: your-admin-secret" \
+  -H "x-admin-secret: Samina2468" \
   -d '{"team_code": "ENG", "eliminated": false}'
 ```
 
@@ -27,7 +47,7 @@ curl -X POST https://worldcup-web-flame.vercel.app/api/admin/eliminate-team \
 
 ## Set Assists
 
-Run this daily with the **full cumulative assists list**. Anyone not in the list gets reset to 0, so always include everyone with assists so far.
+Run this with any players who got new assists. Only players in the list are updated — anyone omitted is left untouched. Safe to send just today's new assists.
 
 ```bash
 curl -X POST "https://tptsbpnrmqaxdxfiuuix.supabase.co/functions/v1/Assists" \
@@ -36,9 +56,7 @@ curl -X POST "https://tptsbpnrmqaxdxfiuuix.supabase.co/functions/v1/Assists" \
   -d '{"assists":[{"name":"Player Name","assists":1},{"name":"Player Name 2","assists":2}]}'
 ```
 
-Only players in the list are updated — anyone omitted is left untouched. Safe to send a partial list of just the new assists for the day.
-
-The response shows which players were updated and any names not found in the DB.
+The response shows which players were updated and any names not found in the DB. If a name isn't found, check the exact spelling in the Supabase players table.
 
 ---
 
@@ -51,7 +69,7 @@ Points are recalculated on the next sync (within 30 minutes).
 ```bash
 curl -X POST https://worldcup-web-flame.vercel.app/api/admin/player-card \
   -H "Content-Type: application/json" \
-  -H "x-admin-secret: your-admin-secret" \
+  -H "x-admin-secret: Samina2468" \
   -d '{"player_name": "Mbappe", "card": "yellow"}'
 ```
 
@@ -59,7 +77,7 @@ curl -X POST https://worldcup-web-flame.vercel.app/api/admin/player-card \
 ```bash
 curl -X POST https://worldcup-web-flame.vercel.app/api/admin/player-card \
   -H "Content-Type: application/json" \
-  -H "x-admin-secret: your-admin-secret" \
+  -H "x-admin-secret: Samina2468" \
   -d '{"player_name": "Mbappe", "card": "red"}'
 ```
 
@@ -68,7 +86,7 @@ curl -X POST https://worldcup-web-flame.vercel.app/api/admin/player-card \
 ```bash
 curl -X POST https://worldcup-web-flame.vercel.app/api/admin/player-card \
   -H "Content-Type: application/json" \
-  -H "x-admin-secret: your-admin-secret" \
+  -H "x-admin-secret: Samina2468" \
   -d '{"player_name": "Mbappe", "card": "yellow", "undo": true}'
 ```
 
