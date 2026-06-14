@@ -13,8 +13,8 @@ Run the player-card command once for each yellow or red card issued that day. Se
 Everything else (goals, clean sheets, manager points, leaderboard) updates automatically every 30 minutes via cron.
 
 ### Credentials
-- **Admin secret:** `Samina2468`
-- **Supabase service key:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwdHNicG5ybXFheGR4Zml1dWl4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTEwMDU1MywiZXhwIjoyMDk2Njc2NTUzfQ.8tzQpYVtjDVkisiQdEV7u15PM9FFDfUB6_c2rWJMcPk`
+- **Admin secret:** stored in Vercel env as `ADMIN_SECRET`
+- **Supabase service key:** stored in Supabase dashboard → Project Settings → API
 - **App URL:** `https://worldcup-web-flame.vercel.app`
 - **Supabase URL:** `https://tptsbpnrmqaxdxfiuuix.supabase.co`
 
@@ -30,7 +30,7 @@ Replace `ENG` with the 3-letter team code from the reference table at the bottom
 ```bash
 curl -X POST https://worldcup-web-flame.vercel.app/api/admin/eliminate-team \
   -H "Content-Type: application/json" \
-  -H "x-admin-secret: Samina2468" \
+  -H "x-admin-secret: <ADMIN_SECRET>" \
   -d '{"team_code": "ENG"}'
 ```
 
@@ -39,7 +39,7 @@ curl -X POST https://worldcup-web-flame.vercel.app/api/admin/eliminate-team \
 ```bash
 curl -X POST https://worldcup-web-flame.vercel.app/api/admin/eliminate-team \
   -H "Content-Type: application/json" \
-  -H "x-admin-secret: Samina2468" \
+  -H "x-admin-secret: <ADMIN_SECRET>" \
   -d '{"team_code": "ENG", "eliminated": false}'
 ```
 
@@ -51,7 +51,7 @@ Run this with any players who got new assists. Only players in the list are upda
 
 ```bash
 curl -X POST "https://tptsbpnrmqaxdxfiuuix.supabase.co/functions/v1/Assists" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwdHNicG5ybXFheGR4Zml1dWl4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTEwMDU1MywiZXhwIjoyMDk2Njc2NTUzfQ.8tzQpYVtjDVkisiQdEV7u15PM9FFDfUB6_c2rWJMcPk" \
+  -H "Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>" \
   -H "Content-Type: application/json" \
   -d '{"assists":[{"name":"Player Name","assists":1},{"name":"Player Name 2","assists":2}]}'
 ```
@@ -69,7 +69,7 @@ Points are recalculated on the next sync (within 30 minutes).
 ```bash
 curl -X POST https://worldcup-web-flame.vercel.app/api/admin/player-card \
   -H "Content-Type: application/json" \
-  -H "x-admin-secret: Samina2468" \
+  -H "x-admin-secret: <ADMIN_SECRET>" \
   -d '{"player_name": "Mbappe", "card": "yellow"}'
 ```
 
@@ -77,7 +77,7 @@ curl -X POST https://worldcup-web-flame.vercel.app/api/admin/player-card \
 ```bash
 curl -X POST https://worldcup-web-flame.vercel.app/api/admin/player-card \
   -H "Content-Type: application/json" \
-  -H "x-admin-secret: Samina2468" \
+  -H "x-admin-secret: <ADMIN_SECRET>" \
   -d '{"player_name": "Mbappe", "card": "red"}'
 ```
 
@@ -86,7 +86,7 @@ curl -X POST https://worldcup-web-flame.vercel.app/api/admin/player-card \
 ```bash
 curl -X POST https://worldcup-web-flame.vercel.app/api/admin/player-card \
   -H "Content-Type: application/json" \
-  -H "x-admin-secret: Samina2468" \
+  -H "x-admin-secret: <ADMIN_SECRET>" \
   -d '{"player_name": "Mbappe", "card": "yellow", "undo": true}'
 ```
 
