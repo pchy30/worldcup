@@ -1,6 +1,6 @@
 // Supabase Edge Function — runs every 30 minutes via cron.
 // Fetches WC 2026 scorers + match results from football-data.org,
-// calculates goals/assists/clean_sheets, updates players and manager points.
+// calculates goals/assists/clean_sheets/cards, updates players and manager points.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -47,6 +47,67 @@ Deno.serve(async (_req) => {
     // 2. Fetch finished matches
     const matchesData = await apiFetch("/competitions/WC/matches?status=FINISHED");
     const matches = matchesData.matches ?? [];
+
+    // 2a. Fetch card events for matches finished since last card sync
+    // Reads/writes last_card_sync_at in app_settings so we only hit new matches.
+    const { data: settingRow } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "last_card_sync_at")
+      .single();
+
+    const lastCardSyncAt = new Date(settingRow?.value ?? "1970-01-01T00:00:00Z");
+    const newlyFinished = matches.filter(
+      (m: any) => m.status === "FINISHED" && new Date(m.lastUpdated ?? m.utcDate) > lastCardSyncAt
+    );
+
+    // cardMap: player api_football_id -> { yellow: number, red: number }
+    const cardMap = new Map<number, { yellow: number; red: number }>();
+
+    for (const match of newlyFinished) {
+      await sleep(7000); // stay under 10 req/min free tier
+      const detail = await apiFetch(`/matches/${match.id}`);
+      const bookings: any[] = detail.bookings ?? [];
+      for (const booking of bookings) {
+        const playerId: number = booking.player?.id;
+        if (!playerId) continue;
+        const existing = cardMap.get(playerId) ?? { yellow: 0, red: 0 };
+        if (booking.card === "YELLOW_CARD") existing.yellow += 1;
+        else if (booking.card === "RED_CARD" || booking.card === "YELLOW_RED_CARD") existing.red += 1;
+        cardMap.set(playerId, existing);
+      }
+    }
+
+    // Apply accumulated card deltas to players in DB
+    if (cardMap.size > 0) {
+      const apiIds = Array.from(cardMap.keys());
+      const { data: cardedPlayers } = await supabase
+        .from("players")
+        .select("id, api_football_id, yellow_cards, red_cards")
+        .in("api_football_id", apiIds);
+
+      for (const player of cardedPlayers ?? []) {
+        const delta = cardMap.get(player.api_football_id)!;
+        await supabase
+          .from("players")
+          .update({
+            yellow_cards: (player.yellow_cards ?? 0) + delta.yellow,
+            red_cards: (player.red_cards ?? 0) + delta.red,
+          })
+          .eq("id", player.id);
+      }
+    }
+
+    // Record the latest match lastUpdated as the new watermark
+    if (newlyFinished.length > 0) {
+      const latest = newlyFinished.reduce((a: any, b: any) =>
+        new Date(a.lastUpdated ?? a.utcDate) > new Date(b.lastUpdated ?? b.utcDate) ? a : b
+      );
+      await supabase
+        .from("app_settings")
+        .update({ value: latest.lastUpdated ?? latest.utcDate })
+        .eq("key", "last_card_sync_at");
+    }
 
     // Build per-player clean sheet count — only for players who actually played
     // cleanSheetMap: player api_football_id -> number of clean sheets
@@ -233,7 +294,7 @@ Deno.serve(async (_req) => {
     }
 
     return new Response(
-      JSON.stringify({ ok: true, scorers: scorers.length, matches: matches.length, managers_updated: memberMap.size }),
+      JSON.stringify({ ok: true, scorers: scorers.length, matches: matches.length, card_matches_checked: newlyFinished.length, cards_found: cardMap.size, managers_updated: memberMap.size }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (e) {
