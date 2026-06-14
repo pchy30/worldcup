@@ -31,9 +31,13 @@ async function apiFetch(path: string, attempt = 1): Promise<any> {
 
 Deno.serve(async (_req) => {
   try {
-    // 1. Fetch scorers (goals + assists)
-    const scorersData = await apiFetch("/competitions/WC/scorers?limit=100");
+    // 1. Fetch scorers (goals + assists) and finished matches in parallel
+    const [scorersData, matchesData] = await Promise.all([
+      apiFetch("/competitions/WC/scorers?limit=100"),
+      apiFetch("/competitions/WC/matches?status=FINISHED"),
+    ]);
     const scorers = scorersData.scorers ?? [];
+    const matches = matchesData.matches ?? [];
 
     // Build map of playerId -> { goals, assists }
     const statsMap = new Map<number, { goals: number; assists: number }>();
@@ -44,12 +48,7 @@ Deno.serve(async (_req) => {
       });
     }
 
-    // 2. Fetch finished matches
-    const matchesData = await apiFetch("/competitions/WC/matches?status=FINISHED");
-    const matches = matchesData.matches ?? [];
-
-    // 2a. Fetch card events for matches finished since last card sync
-    // Reads/writes last_card_sync_at in app_settings so we only hit new matches.
+    // 2. Fetch card events for matches finished since last card sync
     const { data: settingRow } = await supabase
       .from("app_settings")
       .select("value")
@@ -61,7 +60,6 @@ Deno.serve(async (_req) => {
       (m: any) => m.status === "FINISHED" && new Date(m.lastUpdated ?? m.utcDate) > lastCardSyncAt
     );
 
-    // cardMap: player api_football_id -> { yellow: number, red: number }
     const cardMap = new Map<number, { yellow: number; red: number }>();
 
     for (const match of newlyFinished) {
@@ -134,7 +132,7 @@ Deno.serve(async (_req) => {
     // 3. Fetch all GK/DEF players with their team's api_football_id and card counts
     const { data: players } = await supabase
       .from("players")
-      .select("id, api_football_id, position, yellow_cards, red_cards, team:national_teams(api_football_id)")
+      .select("id, api_football_id, position, assists, yellow_cards, red_cards, team:national_teams(api_football_id)")
       .in("position", ["GK", "DEF"]);
 
     // Update GK/DEF — clean sheets by team
@@ -145,9 +143,10 @@ Deno.serve(async (_req) => {
 
       const cleanSheets = cleanSheetMap.get(teamApiId) ?? 0;
       const goals = statsMap.get(player.api_football_id)?.goals ?? 0;
-      const assists = statsMap.get(player.api_football_id)?.assists ?? 0;
+      // Use whichever is higher: manually set assists or API value (free tier often returns null/0)
+      const assists = Math.max(statsMap.get(player.api_football_id)?.assists ?? 0, player.assists ?? 0);
       const cardDeductions = (player.yellow_cards ?? 0) * 1 + (player.red_cards ?? 0) * 3;
-      const totalPoints = goals * 4 + assists * 3 + cleanSheets * 3 - cardDeductions;
+      const totalPoints = goals * 4 + assists * 2 + cleanSheets * 3 - cardDeductions;
 
       await supabase
         .from("players")
@@ -161,16 +160,18 @@ Deno.serve(async (_req) => {
     // Fetch all MID/FWD with card counts so deductions apply even to non-scorers
     const { data: midFwdPlayers } = await supabase
       .from("players")
-      .select("id, api_football_id, yellow_cards, red_cards")
+      .select("id, api_football_id, assists, yellow_cards, red_cards")
       .in("position", ["MID", "FWD"]);
 
     for (const player of midFwdPlayers ?? []) {
-      const stats = statsMap.get(player.api_football_id) ?? { goals: 0, assists: 0 };
+      const apiStats = statsMap.get(player.api_football_id) ?? { goals: 0, assists: 0 };
+      // Use whichever is higher: manually set assists or API value
+      const assists = Math.max(apiStats.assists ?? 0, player.assists ?? 0);
       const cardDeductions = (player.yellow_cards ?? 0) * 1 + (player.red_cards ?? 0) * 3;
-      const totalPoints = stats.goals * 4 + stats.assists * 3 - cardDeductions;
+      const totalPoints = apiStats.goals * 4 + assists * 2 - cardDeductions;
       await supabase
         .from("players")
-        .update({ goals: stats.goals, assists: stats.assists, clean_sheets: 0, total_points: totalPoints })
+        .update({ goals: apiStats.goals, assists, clean_sheets: 0, total_points: totalPoints })
         .eq("id", player.id);
     }
 

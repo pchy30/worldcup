@@ -114,12 +114,13 @@ async function run() {
           position,
           team_id: teamRow.id,
           api_football_id: player.id,
-          goals: 0,
-          assists: 0,
-          clean_sheets: 0,
-          total_points: 0,
         },
-        { onConflict: "api_football_id" }
+        {
+          onConflict: "api_football_id",
+          ignoreDuplicates: false,
+          // Only update identity/roster fields — never overwrite stats
+          defaultToNull: false,
+        }
       );
 
       if (playerErr) {

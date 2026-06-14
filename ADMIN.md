@@ -25,6 +25,23 @@ curl -X POST https://worldcup-web-flame.vercel.app/api/admin/eliminate-team \
 
 ---
 
+## Set Assists
+
+Run this daily with the **full cumulative assists list**. Anyone not in the list gets reset to 0, so always include everyone with assists so far.
+
+```bash
+curl -X POST "https://tptsbpnrmqaxdxfiuuix.supabase.co/functions/v1/Assists" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwdHNicG5ybXFheGR4Zml1dWl4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTEwMDU1MywiZXhwIjoyMDk2Njc2NTUzfQ.8tzQpYVtjDVkisiQdEV7u15PM9FFDfUB6_c2rWJMcPk" \
+  -H "Content-Type: application/json" \
+  -d '{"assists":[{"name":"Player Name","assists":1},{"name":"Player Name 2","assists":2}]}'
+```
+
+Only players in the list are updated — anyone omitted is left untouched. Safe to send a partial list of just the new assists for the day.
+
+The response shows which players were updated and any names not found in the DB.
+
+---
+
 ## Player Cards
 
 When a player receives a yellow or red card, run this to apply the point deduction.
