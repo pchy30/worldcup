@@ -181,7 +181,7 @@ Deno.serve(async (_req) => {
       if (!player) continue;
       const key = `${row.manager_id}::${row.league_id}`;
       const existing = memberMap.get(key) ?? { total_points: 0, goals_scored: 0, assists: 0, highest: 0 };
-      const earnedPoints = Math.max(0, (player.total_points ?? 0) - (row.baseline_points ?? 0));
+      const earnedPoints = (player.total_points ?? 0) - (row.baseline_points ?? 0);
       existing.total_points += earnedPoints;
       existing.goals_scored += player.goals ?? 0;
       existing.assists += player.assists ?? 0;
