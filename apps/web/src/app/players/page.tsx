@@ -63,9 +63,14 @@ function buildPeriods(
     const dayBeforeStr = dayBefore.toISOString().slice(0, 10);
 
     const baselineSnap = byDate.get(dayBeforeStr);
-    const endSnap = byDate.get(endStr);
 
-    // We need at least the end snapshot for this period to show data
+    // Use the most recent snapshot within the period (not necessarily the last day)
+    const availableDates = Array.from(byDate.keys())
+      .filter((d) => d >= startStr && d <= endStr)
+      .sort();
+    const bestDateStr = availableDates[availableDates.length - 1];
+    const endSnap = bestDateStr ? byDate.get(bestDateStr) : undefined;
+
     if (endSnap && endSnap.size > 0) {
       const playerPoints: { player: Player; points: number }[] = [];
       for (const [playerId, endPts] of endSnap.entries()) {
