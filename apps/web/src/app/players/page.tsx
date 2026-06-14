@@ -133,10 +133,10 @@ function PlayerTable({
             <th className="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">
               {showPoints ? "Pts" : "Period Pts"}
             </th>
-            <th className="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider hidden sm:table-cell">
+            <th className="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">
               <span className="flex items-center justify-end gap-1"><Target className="w-3 h-3" /> G</span>
             </th>
-            <th className="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider hidden sm:table-cell">
+            <th className="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider">
               <span className="flex items-center justify-end gap-1"><Zap className="w-3 h-3" /> A</span>
             </th>
             <th className="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wider hidden md:table-cell">
@@ -165,10 +165,10 @@ function PlayerTable({
               <td className="px-4 py-3 text-right">
                 <span className="text-accent font-bold text-base">{points}</span>
               </td>
-              <td className="px-4 py-3 text-right text-sm text-gray-300 hidden sm:table-cell">
+              <td className="px-4 py-3 text-right text-sm text-gray-300">
                 {player.goals}
               </td>
-              <td className="px-4 py-3 text-right text-sm text-gray-300 hidden sm:table-cell">
+              <td className="px-4 py-3 text-right text-sm text-gray-300">
                 {player.assists}
               </td>
               <td className="px-4 py-3 text-right text-sm text-gray-300 hidden md:table-cell">
