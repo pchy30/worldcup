@@ -71,9 +71,9 @@ Deno.serve(async (req) => {
 
     let totalPoints: number;
     if (player.position === "GK" || player.position === "DEF") {
-      totalPoints = goals * 4 + newAssists * 2 + cleanSheets * 3 - cardDeductions;
+      totalPoints = goals * 5 + newAssists * 3 + cleanSheets * 3 - cardDeductions;
     } else {
-      totalPoints = goals * 4 + newAssists * 2 - cardDeductions;
+      totalPoints = goals * 5 + newAssists * 3 - cardDeductions;
     }
 
     const { error: updateErr } = await supabase

@@ -146,7 +146,7 @@ Deno.serve(async (_req) => {
       // Use whichever is higher: manually set assists or API value (free tier often returns null/0)
       const assists = Math.max(statsMap.get(player.api_football_id)?.assists ?? 0, player.assists ?? 0);
       const cardDeductions = (player.yellow_cards ?? 0) * 1 + (player.red_cards ?? 0) * 3;
-      const totalPoints = goals * 4 + assists * 2 + cleanSheets * 3 - cardDeductions;
+      const totalPoints = goals * 5 + assists * 3 + cleanSheets * 3 - cardDeductions;
 
       await supabase
         .from("players")
@@ -168,7 +168,7 @@ Deno.serve(async (_req) => {
       // Use whichever is higher: manually set assists or API value
       const assists = Math.max(apiStats.assists ?? 0, player.assists ?? 0);
       const cardDeductions = (player.yellow_cards ?? 0) * 1 + (player.red_cards ?? 0) * 3;
-      const totalPoints = apiStats.goals * 4 + assists * 2 - cardDeductions;
+      const totalPoints = apiStats.goals * 5 + assists * 3 - cardDeductions;
       await supabase
         .from("players")
         .update({ goals: apiStats.goals, assists, clean_sheets: 0, total_points: totalPoints })
