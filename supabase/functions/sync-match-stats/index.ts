@@ -11,10 +11,20 @@ const supabase = createClient(
 
 const FOOTBALL_DATA_KEY = Deno.env.get("FOOTBALL_DATA_KEY")!;
 
-async function apiFetch(path: string) {
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function apiFetch(path: string, attempt = 1): Promise<any> {
   const res = await fetch(`https://api.football-data.org/v4${path}`, {
     headers: { "X-Auth-Token": FOOTBALL_DATA_KEY },
   });
+
+  if (res.status === 429) {
+    const retryAfter = parseInt(res.headers.get("X-RequestCounter-Reset") ?? "60", 10);
+    console.warn(`Rate limited on ${path}, waiting ${retryAfter + 2}s (attempt ${attempt})`);
+    await sleep((retryAfter + 2) * 1000);
+    return apiFetch(path, attempt + 1);
+  }
+
   if (!res.ok) throw new Error(`API error ${res.status} for ${path}`);
   return res.json();
 }
