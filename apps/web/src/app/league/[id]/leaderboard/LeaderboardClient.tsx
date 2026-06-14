@@ -283,6 +283,11 @@ export default function LeaderboardClient({
                                     <Zap className="w-3 h-3" />{player.assists}
                                   </span>
                                 )}
+                                {player.clean_sheets > 0 && (player.position === "GK" || player.position === "DEF") && (
+                                  <span className="flex items-center gap-0.5 text-purple-400">
+                                    <Shield className="w-3 h-3" />{player.clean_sheets}
+                                  </span>
+                                )}
                               </div>
                               <span className="text-accent font-bold text-sm flex-shrink-0">
                                 {player.total_points}
