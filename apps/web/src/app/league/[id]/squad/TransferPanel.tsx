@@ -104,6 +104,7 @@ export default function TransferPanel({
       setTimeout(() => setSuccess(false), 4000);
       setPlayerOut(null);
       setPlayerIn(null);
+      router.refresh();
     } catch {
       setError("An unexpected error occurred.");
     } finally {

@@ -67,6 +67,7 @@ export interface SquadPlayer {
   player_id: string;
   player?: Player;
   drafted_at: string;
+  baseline_points: number;
 }
 
 export interface TransferWindow {

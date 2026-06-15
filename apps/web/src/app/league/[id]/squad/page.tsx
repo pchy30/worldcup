@@ -5,7 +5,8 @@ import PlayerCard from "@/components/PlayerCard";
 import PositionBadge from "@/components/PositionBadge";
 import TransferPanel from "./TransferPanel";
 import NextWindowCard from "./NextWindowCard";
-import { Target, Zap, Shield, Star } from "lucide-react";
+import SquadPitch from "./SquadPitch";
+import { Star } from "lucide-react";
 
 export interface NextFixture {
   opponent: string;
@@ -85,7 +86,9 @@ export default async function SquadPage({ params }: PageProps) {
     .eq("league_id", id)
     .eq("manager_id", user.id);
 
-  const mySquad = ((squadRows as SquadPlayer[]) ?? []).map((r) => {
+  // Keep full rows (with baseline_points) so pitch can show earned-since-joining points
+  const mySquadRows = (squadRows as SquadPlayer[]) ?? [];
+  const mySquad = mySquadRows.map((r) => {
     const p = Array.isArray(r.player) ? r.player[0] : r.player;
     return p as Player;
   }).filter(Boolean);
@@ -186,7 +189,10 @@ export default async function SquadPage({ params }: PageProps) {
     nextFixtures = await fetchNextFixtures();
   }
 
-  const totalPoints = mySquad.reduce((sum, p) => sum + p.total_points, 0);
+  const totalPoints = mySquadRows.reduce((sum, r) => {
+    const p = Array.isArray(r.player) ? r.player[0] : r.player;
+    return sum + Math.max(0, (p?.total_points ?? 0) - (r.baseline_points ?? 0));
+  }, 0);
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
@@ -233,81 +239,12 @@ export default async function SquadPage({ params }: PageProps) {
       {/* Pitch view */}
       <div className="mb-10">
         <h2 className="text-lg font-bold text-white mb-4">Squad ({mySquad.length}/11)</h2>
-        {mySquad.length === 0 ? (
+        {mySquadRows.length === 0 ? (
           <div className="card text-center py-12">
             <p className="text-muted">Your squad is empty. Something may have gone wrong.</p>
           </div>
         ) : (
-          <div
-            className="relative w-full rounded-2xl overflow-hidden"
-            style={{
-              background: "linear-gradient(180deg, #1a6b2f 0%, #1e7a35 25%, #1a6b2f 50%, #1e7a35 75%, #1a6b2f 100%)",
-              minHeight: "clamp(320px, 60vw, 480px)",
-            }}
-          >
-            {/* Pitch markings */}
-            <div className="absolute inset-0 pointer-events-none">
-              {/* Centre circle */}
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 rounded-full border border-white/20" />
-              {/* Centre line */}
-              <div className="absolute left-0 right-0 top-1/2 h-px bg-white/20" />
-              {/* Penalty areas */}
-              <div className="absolute left-1/2 -translate-x-1/2 top-0 w-40 h-16 border-b border-x border-white/20" />
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-40 h-16 border-t border-x border-white/20" />
-            </div>
-
-            {/* Players laid out by position row — FWD top, GK bottom */}
-            <div className="relative z-10 flex flex-col justify-around h-full py-6 gap-4">
-              {(["FWD", "MID", "DEF", "GK"] as const).map((pos) => {
-                const posPlayers = mySquad.filter((p) => p.position === pos);
-                if (posPlayers.length === 0) return null;
-                return (
-                  <div key={pos} className="flex justify-center gap-2 sm:gap-4 flex-wrap">
-                    {posPlayers.map((player) => (
-                      <div key={player.id} className="flex flex-col items-center gap-1 w-14 sm:w-20">
-                        {/* Player token */}
-                        <div className="relative">
-                          <div className="w-12 h-12 rounded-full bg-white/10 border-2 border-white/60 flex items-center justify-center text-white font-bold text-sm shadow-lg backdrop-blur-sm">
-                            {player.name.split(" ").pop()?.charAt(0).toUpperCase()}
-                          </div>
-                          {/* Points badge */}
-                          <div className="absolute -top-1.5 -right-1.5 bg-accent text-primary text-xs font-extrabold rounded-full w-5 h-5 flex items-center justify-center shadow">
-                            {player.total_points}
-                          </div>
-                        </div>
-                        {/* Name */}
-                        <p className="text-white text-xs font-semibold text-center leading-tight truncate w-full text-center drop-shadow">
-                          {player.name.split(" ").pop()}
-                        </p>
-                        {/* Flag + position */}
-                        <div className="flex items-center gap-1">
-                          <PositionBadge position={player.position} />
-                        </div>
-                        {/* Stats */}
-                        <div className="flex items-center gap-1.5 text-xs">
-                          {player.goals > 0 && (
-                            <span className="flex items-center gap-0.5 text-green-300">
-                              <Target className="w-2.5 h-2.5" />{player.goals}
-                            </span>
-                          )}
-                          {player.assists > 0 && (
-                            <span className="flex items-center gap-0.5 text-blue-300">
-                              <Zap className="w-2.5 h-2.5" />{player.assists}
-                            </span>
-                          )}
-                          {player.clean_sheets > 0 && (
-                            <span className="flex items-center gap-0.5 text-purple-300">
-                              <Shield className="w-2.5 h-2.5" />{player.clean_sheets}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <SquadPitch squadRows={mySquadRows as (SquadPlayer & { player: Player })[]} />
         )}
       </div>
 
