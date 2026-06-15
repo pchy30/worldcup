@@ -50,13 +50,12 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
   const knockoutMode = league?.knockout_mode ?? false;
 
-  // 2. Find open transfer window (if any)
+  // 2. Find open transfer window by time range — status is unreliable
   const now = new Date().toISOString();
   const { data: openWindow, error: windowError } = await supabase
     .from("transfer_windows")
     .select("*")
     .eq("league_id", leagueId)
-    .eq("status", "open")
     .lte("opens_at", now)
     .gte("closes_at", now)
     .maybeSingle();

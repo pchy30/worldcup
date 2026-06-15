@@ -98,13 +98,12 @@ export default async function SquadPage({ params }: PageProps) {
     .eq("manager_id", user.id)
     .order("round", { ascending: true });
 
-  // Check for open transfer window
+  // Check for open transfer window — use time range only, status is unreliable
   const now = new Date().toISOString();
   const { data: openWindow } = await supabase
     .from("transfer_windows")
     .select("*")
     .eq("league_id", id)
-    .eq("status", "open")
     .lte("opens_at", now)
     .gte("closes_at", now)
     .maybeSingle();
@@ -126,7 +125,6 @@ export default async function SquadPage({ params }: PageProps) {
       .from("transfer_windows")
       .select("opens_at")
       .eq("league_id", id)
-      .eq("status", "closed")
       .gt("opens_at", now)
       .order("opens_at", { ascending: true })
       .limit(1)
