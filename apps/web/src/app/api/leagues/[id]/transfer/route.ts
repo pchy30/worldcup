@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 
 const MAX_TRANSFERS_PER_WINDOW = 2;
 
@@ -9,6 +9,7 @@ interface RouteContext {
 
 export async function POST(request: NextRequest, { params }: RouteContext) {
   const supabase = createClient();
+  const adminSupabase = createAdminClient();
   const { id: leagueId } = params;
 
   const {
@@ -244,9 +245,9 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
   }
 
-  // All checks passed — execute transfer
+  // All checks passed — execute transfer using admin client to bypass RLS
   // Remove player_out from squad
-  const { error: removeError } = await supabase
+  const { error: removeError } = await adminSupabase
     .from("squad_players")
     .delete()
     .eq("league_id", leagueId)
@@ -259,7 +260,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
   // Add player_in to squad with their current points as baseline
   // so only points scored after this transfer count for the manager
-  const { error: addError } = await supabase.from("squad_players").insert({
+  const { error: addError } = await adminSupabase.from("squad_players").insert({
     league_id: leagueId,
     manager_id: user.id,
     player_id: player_in_id,
@@ -268,7 +269,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
   if (addError) {
     // Rollback
-    await supabase.from("squad_players").insert({
+    await adminSupabase.from("squad_players").insert({
       league_id: leagueId,
       manager_id: user.id,
       player_id: player_out_id,
