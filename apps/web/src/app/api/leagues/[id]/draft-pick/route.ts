@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 
+// Snake draft: round 0 goes forward, round 1 backward, round 2 forward, …
+function snakePicker(order: string[], pickIndex: number): string {
+  const n = order.length;
+  const round = Math.floor(pickIndex / n);
+  const posInRound = pickIndex % n;
+  return round % 2 === 0 ? order[posInRound] : order[n - 1 - posInRound];
+}
+
 interface RouteContext {
   params: { id: string };
 }
@@ -51,7 +59,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   // 1. Verify it's this user's turn
   const draftOrder = league.draft_order ?? [];
   const currentPickerUserId = draftOrder.length > 0
-    ? draftOrder[league.current_pick_index % draftOrder.length]
+    ? snakePicker(draftOrder, league.current_pick_index)
     : null;
 
   if (currentPickerUserId !== user.id) {

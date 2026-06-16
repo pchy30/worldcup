@@ -19,6 +19,13 @@ interface DraftRoomProps {
 
 const POSITIONS: PlayerPosition[] = ["GK", "DEF", "MID", "FWD"];
 
+function snakePicker(order: string[], pickIndex: number): string {
+  const n = order.length;
+  const round = Math.floor(pickIndex / n);
+  const posInRound = pickIndex % n;
+  return round % 2 === 0 ? order[posInRound] : order[n - 1 - posInRound];
+}
+
 export default function DraftRoom({
   league,
   currentUserId,
@@ -61,10 +68,10 @@ export default function DraftRoom({
     [picks, currentUserId]
   );
 
-  // Who's picking now
+  // Who's picking now (snake order)
   const draftOrder = currentLeague.draft_order ?? [];
   const currentPickerUserId = draftOrder.length > 0
-    ? draftOrder[currentLeague.current_pick_index % draftOrder.length]
+    ? snakePicker(draftOrder, currentLeague.current_pick_index)
     : null;
   const isMyTurn = currentPickerUserId === currentUserId;
 
