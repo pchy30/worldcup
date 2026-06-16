@@ -119,7 +119,7 @@ export default function PlayerCard({
             {displayPoints ?? player.total_points}
           </span>
           <span className="text-accent/60 text-[10px] font-medium leading-none mt-0.5">
-            pts
+            {displayPoints !== undefined ? `(${player.total_points})` : "pts"}
           </span>
         </div>
       </div>
