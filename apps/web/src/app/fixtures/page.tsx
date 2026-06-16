@@ -1,4 +1,4 @@
-import { Calendar } from "lucide-react";
+import FixturesClient from "./FixturesClient";
 
 const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_KEY ?? "";
 
@@ -12,30 +12,7 @@ interface Match {
   awayTeam: { id: number; name: string; crest: string };
   score: {
     fullTime: { home: number | null; away: number | null };
-    halfTime: { home: number | null; away: number | null };
   };
-}
-
-function formatStage(stage: string, group: string | null): string {
-  if (group) return group.replace("GROUP_", "Group ");
-  const map: Record<string, string> = {
-    GROUP_STAGE: "Group Stage",
-    LAST_32: "Round of 32",
-    LAST_16: "Round of 16",
-    QUARTER_FINALS: "Quarter-Finals",
-    SEMI_FINALS: "Semi-Finals",
-    THIRD_PLACE: "Third Place",
-    FINAL: "Final",
-  };
-  return map[stage] ?? stage;
-}
-
-function formatTime(utcDate: string): string {
-  return new Date(utcDate).toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Europe/London",
-  });
 }
 
 function formatDate(utcDate: string): string {
@@ -47,15 +24,12 @@ function formatDate(utcDate: string): string {
   });
 }
 
-export const revalidate = 1800; // revalidate every 30 minutes
+export const revalidate = 1800;
 
 export default async function FixturesPage() {
   let matches: Match[] = [];
-  let error = false;
 
-  if (!FOOTBALL_DATA_KEY) {
-    error = true;
-  } else {
+  if (FOOTBALL_DATA_KEY) {
     try {
       const res = await fetch("https://api.football-data.org/v4/competitions/WC/matches", {
         headers: { "X-Auth-Token": FOOTBALL_DATA_KEY },
@@ -64,15 +38,12 @@ export default async function FixturesPage() {
       if (res.ok) {
         const data = await res.json();
         matches = data.matches ?? [];
-      } else {
-        error = true;
       }
     } catch {
-      error = true;
+      // fall through to empty state
     }
   }
 
-  // Group by date
   const byDate = new Map<string, Match[]>();
   for (const m of matches) {
     const date = formatDate(m.utcDate);
@@ -80,8 +51,6 @@ export default async function FixturesPage() {
     byDate.get(date)!.push(m);
   }
 
-  // Split into upcoming and results
-  const now = new Date();
   const upcoming: [string, Match[]][] = [];
   const results: [string, Match[]][] = [];
 
@@ -94,134 +63,8 @@ export default async function FixturesPage() {
     }
   }
 
-  // Sort upcoming ascending, results descending
   upcoming.sort((a, b) => new Date(a[1][0].utcDate).getTime() - new Date(b[1][0].utcDate).getTime());
   results.sort((a, b) => new Date(b[1][0].utcDate).getTime() - new Date(a[1][0].utcDate).getTime());
 
-  return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-          <Calendar className="w-5 h-5 text-accent" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-white">Fixtures</h1>
-          <p className="text-muted text-sm mt-0.5">FIFA World Cup 2026</p>
-        </div>
-      </div>
-
-      {error && (
-        <div className="card text-center py-12">
-          <p className="text-muted text-sm">Could not load fixtures. Try again later.</p>
-        </div>
-      )}
-
-      {!error && matches.length === 0 && (
-        <div className="card text-center py-12">
-          <p className="text-muted text-sm">No fixtures available yet.</p>
-        </div>
-      )}
-
-      {upcoming.length > 0 && (
-        <div className="mb-10">
-          <h2 className="text-sm font-semibold text-muted uppercase tracking-wider mb-4">Upcoming</h2>
-          <div className="space-y-6">
-            {upcoming.map(([date, dayMatches]) => (
-              <MatchDay key={date} date={date} matches={dayMatches} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {results.length > 0 && (
-        <div>
-          <h2 className="text-sm font-semibold text-muted uppercase tracking-wider mb-4">Results</h2>
-          <div className="space-y-6">
-            {results.map(([date, dayMatches]) => (
-              <MatchDay key={date} date={date} matches={dayMatches} />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function MatchDay({ date, matches }: { date: string; matches: Match[] }) {
-  return (
-    <div>
-      <p className="text-sm font-semibold text-white mb-2">{date}</p>
-      <div className="space-y-2">
-        {matches.map((m) => (
-          <MatchCard key={m.id} match={m} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-const SHORT_NAMES: Record<string, string> = {
-  "United States": "USA",
-  "Saudi Arabia": "Saudi",
-  "South Korea": "Korea",
-  "Ivory Coast": "C. d'Ivoire",
-  "Netherlands": "Netherlands",
-};
-
-function shortName(name: string): string {
-  return SHORT_NAMES[name] ?? name;
-}
-
-function MatchCard({ match: m }: { match: Match }) {
-  const isFinished = m.status === "FINISHED";
-  const isLive = m.status === "IN_PLAY" || m.status === "PAUSED";
-  const homeScore = m.score.fullTime.home;
-  const awayScore = m.score.fullTime.away;
-  const homeWon = isFinished && homeScore !== null && awayScore !== null && homeScore > awayScore;
-  const awayWon = isFinished && homeScore !== null && awayScore !== null && awayScore > homeScore;
-
-  return (
-    <div className={`card py-3 px-3 sm:px-4 ${isLive ? "border-accent/40" : ""}`}>
-      <div className="flex items-center gap-2">
-        {/* Home team */}
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          {m.homeTeam.crest && (
-            <img src={m.homeTeam.crest} alt={m.homeTeam.name} className="w-6 h-6 object-contain flex-shrink-0" />
-          )}
-          <span className={`text-sm font-semibold truncate ${homeWon ? "text-white" : "text-gray-300"}`}>
-            <span className="hidden sm:inline">{m.homeTeam.name}</span>
-            <span className="sm:hidden">{shortName(m.homeTeam.name)}</span>
-          </span>
-        </div>
-
-        {/* Score / time */}
-        <div className="flex-shrink-0 text-center w-[72px]">
-          {isFinished ? (
-            <span className="text-white font-extrabold text-base">
-              {homeScore} – {awayScore}
-            </span>
-          ) : isLive ? (
-            <span className="text-accent font-bold text-sm animate-pulse">LIVE</span>
-          ) : (
-            <div>
-              <span className="text-accent font-bold text-sm">{formatTime(m.utcDate)}</span>
-              <p className="text-muted text-[10px]">BST</p>
-            </div>
-          )}
-          <p className="text-muted text-[10px] mt-0.5 leading-tight">{formatStage(m.stage, m.group)}</p>
-        </div>
-
-        {/* Away team */}
-        <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
-          <span className={`text-sm font-semibold truncate text-right ${awayWon ? "text-white" : "text-gray-300"}`}>
-            <span className="hidden sm:inline">{m.awayTeam.name}</span>
-            <span className="sm:hidden">{shortName(m.awayTeam.name)}</span>
-          </span>
-          {m.awayTeam.crest && (
-            <img src={m.awayTeam.crest} alt={m.awayTeam.name} className="w-6 h-6 object-contain flex-shrink-0" />
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  return <FixturesClient upcoming={upcoming} results={results} />;
 }
