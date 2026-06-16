@@ -96,7 +96,7 @@ export default async function SquadPage({ params }: PageProps) {
   // Fetch my picked national teams (bonus teams)
   const { data: myBonusTeams } = await supabase
     .from("manager_national_teams")
-    .select("round, team:national_teams(id, name, flag_url, code)")
+    .select("round, team:national_teams(id, name, flag_url, code, bonus_points)")
     .eq("league_id", id)
     .eq("manager_id", user.id)
     .order("round", { ascending: true });
@@ -223,6 +223,7 @@ export default async function SquadPage({ params }: PageProps) {
             {myBonusTeams.map((pick, i) => {
               const team = Array.isArray(pick.team) ? pick.team[0] : pick.team;
               if (!team) return null;
+              const teamAny = team as typeof team & { bonus_points?: number };
               return (
                 <div key={i} className="flex items-center gap-2 bg-primary/60 border border-muted/20 rounded-lg px-3 py-2">
                   {team.flag_url ? (
@@ -231,6 +232,9 @@ export default async function SquadPage({ params }: PageProps) {
                     <span className="text-xs text-muted font-bold">{team.code}</span>
                   )}
                   <span className="text-sm text-white font-medium">{team.name}</span>
+                  {(teamAny.bonus_points ?? 0) > 0 && (
+                    <span className="text-xs font-bold text-accent">+{teamAny.bonus_points}</span>
+                  )}
                   <span className="text-xs text-muted">R{pick.round}</span>
                 </div>
               );
