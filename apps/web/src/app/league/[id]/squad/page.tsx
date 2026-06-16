@@ -6,7 +6,8 @@ import PositionBadge from "@/components/PositionBadge";
 import TransferPanel from "./TransferPanel";
 import NextWindowCard from "./NextWindowCard";
 import SquadPitch from "./SquadPitch";
-import { Star } from "lucide-react";
+import { Star, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export interface NextFixture {
   opponent: string;
@@ -202,6 +203,13 @@ export default async function SquadPage({ params }: PageProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
+          <Link
+            href={`/league/${id}/leaderboard`}
+            className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-white transition-colors mb-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Leaderboard
+          </Link>
           <h1 className="text-3xl font-bold text-white">{league.name}</h1>
           <p className="text-muted mt-1">My Squad</p>
         </div>
