@@ -13,6 +13,7 @@ const POSITIONS: PlayerPosition[] = ["GK", "DEF", "MID", "FWD"];
 interface TransferPanelProps {
   leagueId: string;
   mySquad: Player[];
+  baselineMap: Record<string, number>;
   availablePlayers: Player[];
   windowId: string | null;
   windowClosesAt: string | null;
@@ -25,6 +26,7 @@ interface TransferPanelProps {
 export default function TransferPanel({
   leagueId,
   mySquad: initialSquad,
+  baselineMap,
   availablePlayers: initialAvailable,
   windowId,
   windowClosesAt,
@@ -197,6 +199,7 @@ export default function TransferPanel({
                 player={player}
                 selectable
                 selected={playerOut?.id === player.id}
+                displayPoints={Math.max(0, player.total_points - (baselineMap[player.id] ?? 0))}
                 onClick={() => {
                   const next = playerOut?.id === player.id ? null : player;
                   setPlayerOut(next);

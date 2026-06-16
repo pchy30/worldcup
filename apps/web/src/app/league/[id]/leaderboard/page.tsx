@@ -73,7 +73,7 @@ export default async function LeaderboardPage({ params }: PageProps) {
   // Fetch every manager's squad players — use admin to bypass RLS on squad_players
   const { data: allSquadRows } = await adminSupabase
     .from("squad_players")
-    .select("manager_id, player:players(id, name, position, total_points, goals, assists, clean_sheets)")
+    .select("manager_id, baseline_points, player:players(id, name, position, total_points, goals, assists, clean_sheets)")
     .eq("league_id", id);
 
   // Fetch every manager's bonus national teams
@@ -91,11 +91,12 @@ export default async function LeaderboardPage({ params }: PageProps) {
     }
     const rawPlayer = Array.isArray(row.player) ? row.player[0] : row.player;
     if (!rawPlayer) continue;
+    const earnedPoints = Math.max(0, (rawPlayer.total_points ?? 0) - (row.baseline_points ?? 0));
     managerDetails[row.manager_id].squad.push({
       id: rawPlayer.id,
       name: rawPlayer.name,
       position: rawPlayer.position,
-      total_points: rawPlayer.total_points,
+      total_points: earnedPoints,
       goals: rawPlayer.goals,
       assists: rawPlayer.assists,
       clean_sheets: rawPlayer.clean_sheets,

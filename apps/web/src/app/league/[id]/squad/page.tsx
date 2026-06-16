@@ -194,6 +194,12 @@ export default async function SquadPage({ params }: PageProps) {
     return sum + Math.max(0, (p?.total_points ?? 0) - (r.baseline_points ?? 0));
   }, 0);
 
+  // baseline_points keyed by player_id — used by TransferPanel to show earned pts
+  const baselineMap: Record<string, number> = {};
+  for (const r of mySquadRows) {
+    baselineMap[r.player_id] = r.baseline_points ?? 0;
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
       {/* Header */}
@@ -253,6 +259,7 @@ export default async function SquadPage({ params }: PageProps) {
         <TransferPanel
           leagueId={id}
           mySquad={mySquad}
+          baselineMap={baselineMap}
           availablePlayers={availablePlayers}
           windowId={openWindow?.id ?? null}
           windowClosesAt={openWindow?.closes_at ?? null}

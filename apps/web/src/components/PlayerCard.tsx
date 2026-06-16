@@ -8,6 +8,7 @@ interface PlayerCardProps {
   selectable?: boolean;
   selected?: boolean;
   onClick?: () => void;
+  displayPoints?: number;
 }
 
 export default function PlayerCard({
@@ -15,6 +16,7 @@ export default function PlayerCard({
   selectable = false,
   selected = false,
   onClick,
+  displayPoints,
 }: PlayerCardProps) {
   const showCleanSheet =
     player.position === "GK" || player.position === "DEF";
@@ -114,7 +116,7 @@ export default function PlayerCard({
         {/* Points badge */}
         <div className="flex-shrink-0 flex flex-col items-center justify-center bg-accent/10 border border-accent/30 rounded-lg px-2 py-1.5 min-w-[42px]">
           <span className="text-accent font-bold text-lg leading-none">
-            {player.total_points}
+            {displayPoints ?? player.total_points}
           </span>
           <span className="text-accent/60 text-[10px] font-medium leading-none mt-0.5">
             pts
