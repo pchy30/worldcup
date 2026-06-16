@@ -69,7 +69,7 @@ const steps = [
 ];
 
 const scoringRules = [
-  { icon: Target, label: "Goal scored", points: "+4 pts", color: "text-green-400" },
+  { icon: Target, label: "Goal scored", points: "+5 pts", color: "text-green-400" },
   { icon: Zap, label: "Assist", points: "+3 pts", color: "text-blue-400" },
   { icon: Shield, label: "Clean sheet (GK or DEF only)", points: "+3 pts", color: "text-purple-400" },
   { icon: Star, label: "Bonus team win", points: "+3 pts", color: "text-accent" },
@@ -101,7 +101,7 @@ const tips = [
   "Pick a strong nation in the team phase — a team that goes deep in the tournament can earn you 7+ bonus points from wins alone.",
   "Spread your player picks across different nations — don't stack from one team that might go out early.",
   "GKs and defenders score clean sheet points. A top GK from a defensive side can rack up big points.",
-  "Use early picks on clinical strikers — goals score the most points at +4 each.",
+  "Use early picks on clinical strikers — goals score the most points at +5 each.",
   "When a nation is eliminated you get an automatic free transfer — use it immediately rather than waiting for the next window, as the best replacement players go fast.",
   "In snake drafts, the manager picking last in round 1 picks first in round 2 — use that double pick to grab two stars back-to-back.",
 ];
