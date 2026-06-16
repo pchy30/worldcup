@@ -150,7 +150,7 @@ export default async function SquadPage({ params }: PageProps) {
   // Fetch manager's free transfer balance
   const { data: memberRow } = await supabase
     .from("league_members")
-    .select("free_transfers")
+    .select("free_transfers, total_points")
     .eq("league_id", id)
     .eq("user_id", user.id)
     .single();
@@ -189,10 +189,7 @@ export default async function SquadPage({ params }: PageProps) {
     nextFixtures = await fetchNextFixtures();
   }
 
-  const totalPoints = mySquadRows.reduce((sum, r) => {
-    const p = Array.isArray(r.player) ? r.player[0] : r.player;
-    return sum + ((p?.total_points ?? 0) - (r.baseline_points ?? 0));
-  }, 0);
+  const totalPoints = memberRow?.total_points ?? 0;
 
   // baseline_points keyed by player_id — used by TransferPanel to show earned pts
   const baselineMap: Record<string, number> = {};
