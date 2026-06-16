@@ -79,7 +79,7 @@ export default async function LeaderboardPage({ params }: PageProps) {
   // Fetch every manager's bonus national teams
   const { data: allBonusTeams } = await adminSupabase
     .from("manager_national_teams")
-    .select("manager_id, round, team:national_teams(id, name, flag_url, code)")
+    .select("manager_id, round, team:national_teams(id, name, flag_url, code, bonus_points)")
     .eq("league_id", id)
     .order("round", { ascending: true });
 
@@ -111,7 +111,11 @@ export default async function LeaderboardPage({ params }: PageProps) {
       managerDetails[row.manager_id] = { squad: [], bonusTeams: [] };
     }
     const team = Array.isArray(row.team) ? row.team[0] : row.team;
-    if (team) managerDetails[row.manager_id].bonusTeams.push({ ...team, round: row.round } as ManagerDetail["bonusTeams"][number]);
+    if (team) managerDetails[row.manager_id].bonusTeams.push({
+      ...team,
+      round: row.round,
+      bonus_points: (team as { bonus_points?: number }).bonus_points ?? 0,
+    } as ManagerDetail["bonusTeams"][number]);
   }
 
   return (

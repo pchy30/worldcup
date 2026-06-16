@@ -38,6 +38,7 @@ export interface ManagerDetail {
     flag_url: string | null;
     code: string;
     round: number;
+    bonus_points: number;
   }[];
 }
 
@@ -253,6 +254,9 @@ export default function LeaderboardClient({
                               <img src={t.flag_url} alt={t.code} className="w-6 h-4 object-cover rounded" />
                             )}
                             <span className="text-sm text-white font-medium">{t.name}</span>
+                            {t.bonus_points > 0 && (
+                              <span className="text-xs font-bold text-accent">+{t.bonus_points}</span>
+                            )}
                           </div>
                         ))}
                       </div>

@@ -224,8 +224,26 @@ Deno.serve(async (_req) => {
       .select("id, api_football_id");
 
     const teamApiIdMap = new Map<string, number>();
+    const apiIdToTeamId = new Map<number, string>();
     for (const t of allNationalTeams ?? []) {
-      if (t.api_football_id) teamApiIdMap.set(t.id, t.api_football_id);
+      if (t.api_football_id) {
+        teamApiIdMap.set(t.id, t.api_football_id);
+        apiIdToTeamId.set(t.api_football_id, t.id);
+      }
+    }
+
+    // Persist wins/draws/bonus_points per national team
+    for (const [apiId, result] of teamResultMap.entries()) {
+      const teamId = apiIdToTeamId.get(apiId);
+      if (!teamId) continue;
+      await supabase
+        .from("national_teams")
+        .update({
+          wins: result.wins,
+          draws: result.draws,
+          bonus_points: result.wins * 3 + result.draws * 1,
+        })
+        .eq("id", teamId);
     }
 
     // Build bonus per (manager_id, league_id)
