@@ -24,6 +24,7 @@ export interface ManagerDetail {
     name: string;
     position: PlayerPosition;
     total_points: number;
+    total_points_overall: number;
     goals: number;
     assists: number;
     clean_sheets: number;
@@ -289,9 +290,10 @@ export default function LeaderboardClient({
                                   </span>
                                 )}
                               </div>
-                              <span className="text-accent font-bold text-sm flex-shrink-0">
-                                {player.total_points}
-                              </span>
+                              <div className="flex flex-col items-end flex-shrink-0">
+                                <span className="text-accent font-bold text-sm leading-none">{player.total_points}</span>
+                                <span className="text-accent/50 text-[10px] leading-none mt-0.5">({player.total_points_overall})</span>
+                              </div>
                             </div>
                           ))}
                       </div>

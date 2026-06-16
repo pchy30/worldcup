@@ -97,6 +97,7 @@ export default async function LeaderboardPage({ params }: PageProps) {
       name: rawPlayer.name,
       position: rawPlayer.position,
       total_points: earnedPoints,
+      total_points_overall: rawPlayer.total_points ?? 0,
       goals: rawPlayer.goals,
       assists: rawPlayer.assists,
       clean_sheets: rawPlayer.clean_sheets,
