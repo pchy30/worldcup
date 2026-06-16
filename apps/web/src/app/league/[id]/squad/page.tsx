@@ -191,7 +191,7 @@ export default async function SquadPage({ params }: PageProps) {
 
   const totalPoints = mySquadRows.reduce((sum, r) => {
     const p = Array.isArray(r.player) ? r.player[0] : r.player;
-    return sum + Math.max(0, (p?.total_points ?? 0) - (r.baseline_points ?? 0));
+    return sum + ((p?.total_points ?? 0) - (r.baseline_points ?? 0));
   }, 0);
 
   // baseline_points keyed by player_id — used by TransferPanel to show earned pts

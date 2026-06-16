@@ -15,7 +15,7 @@ export default function SquadPitch({ squadRows }: SquadPitchProps) {
   // Compute earned points = total_points - baseline_points for each player
   const players = squadRows.map((r) => ({
     ...r.player,
-    earned_points: Math.max(0, (r.player.total_points ?? 0) - (r.baseline_points ?? 0)),
+    earned_points: (r.player.total_points ?? 0) - (r.baseline_points ?? 0),
   }));
 
   return (

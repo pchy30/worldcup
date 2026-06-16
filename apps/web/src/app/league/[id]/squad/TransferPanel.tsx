@@ -199,7 +199,7 @@ export default function TransferPanel({
                 player={player}
                 selectable
                 selected={playerOut?.id === player.id}
-                displayPoints={Math.max(0, player.total_points - (baselineMap[player.id] ?? 0))}
+                displayPoints={player.total_points - (baselineMap[player.id] ?? 0)}
                 onClick={() => {
                   const next = playerOut?.id === player.id ? null : player;
                   setPlayerOut(next);

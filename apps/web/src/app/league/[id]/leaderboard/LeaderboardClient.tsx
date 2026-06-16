@@ -28,6 +28,8 @@ export interface ManagerDetail {
     goals: number;
     assists: number;
     clean_sheets: number;
+    yellow_cards: number;
+    red_cards: number;
     team: { name: string } | null;
   }[];
   bonusTeams: {
@@ -287,6 +289,17 @@ export default function LeaderboardClient({
                                 {player.clean_sheets > 0 && (player.position === "GK" || player.position === "DEF") && (
                                   <span className="flex items-center gap-0.5 text-purple-400">
                                     <Shield className="w-3 h-3" />{player.clean_sheets}
+                                  </span>
+                                )}
+                                {player.yellow_cards > 0 && (
+                                  <span className="flex items-center gap-0.5">
+                                    <span className="inline-block w-2.5 h-3.5 rounded-sm bg-yellow-400" />
+                                    {player.yellow_cards > 1 && <span className="text-yellow-400">{player.yellow_cards}</span>}
+                                  </span>
+                                )}
+                                {player.red_cards > 0 && (
+                                  <span className="flex items-center gap-0.5">
+                                    <span className="inline-block w-2.5 h-3.5 rounded-sm bg-red-500" />
                                   </span>
                                 )}
                               </div>
