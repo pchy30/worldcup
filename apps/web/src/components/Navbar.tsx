@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { Trophy, Users, HelpCircle, BarChart2, Calendar } from "lucide-react";
 import NavbarLogout from "./NavbarLogout";
 import MobileMenuClient from "./MobileMenuClient";
-import PushSubscribeButton from "./PushSubscribeButton";
 
 export default async function Navbar() {
   const supabase = createClient();
@@ -86,7 +85,6 @@ export default async function Navbar() {
                     {displayName}
                   </span>
                 </div>
-                <PushSubscribeButton />
                 <NavbarLogout />
                 <MobileMenuClient isLoggedIn={true} />
               </>

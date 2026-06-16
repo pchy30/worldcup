@@ -1,8 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/push/send-windows",
-      "schedule": "*/30 * * * *"
-    }
-  ]
-}
