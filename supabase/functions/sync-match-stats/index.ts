@@ -264,6 +264,16 @@ Deno.serve(async (_req) => {
       .from("squad_players")
       .select("manager_id, league_id, baseline_points, player:players(total_points, goals, assists)");
 
+    // Also fetch banked_points (from transferred-out players) per member
+    const { data: allMembers } = await supabase
+      .from("league_members")
+      .select("user_id, league_id, banked_points");
+
+    const bankedMap = new Map<string, number>();
+    for (const m of allMembers ?? []) {
+      bankedMap.set(`${m.user_id}::${m.league_id}`, m.banked_points ?? 0);
+    }
+
     // Aggregate per (manager_id, league_id)
     const memberMap = new Map<string, { total_points: number; goals_scored: number; assists: number; highest: number }>();
     for (const row of squadRows ?? []) {
@@ -282,10 +292,11 @@ Deno.serve(async (_req) => {
     for (const [key, totals] of memberMap.entries()) {
       const [manager_id, league_id] = key.split("::");
       const bonus = bonusMap.get(key) ?? 0;
+      const banked = bankedMap.get(key) ?? 0;
       await supabase
         .from("league_members")
         .update({
-          total_points: totals.total_points + bonus,
+          total_points: totals.total_points + bonus + banked,
           bonus_points: bonus,
           goals_scored: totals.goals_scored,
           assists: totals.assists,

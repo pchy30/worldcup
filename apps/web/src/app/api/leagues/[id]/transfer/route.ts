@@ -246,6 +246,39 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   }
 
   // All checks passed — execute transfer using admin client to bypass RLS
+
+  // Fetch player_out's current total_points and baseline so we can bank earned pts
+  const { data: playerOutFull } = await supabase
+    .from("players")
+    .select("total_points")
+    .eq("id", player_out_id)
+    .single();
+
+  const { data: outSquadRow } = await supabase
+    .from("squad_players")
+    .select("baseline_points")
+    .eq("league_id", leagueId)
+    .eq("manager_id", user.id)
+    .eq("player_id", player_out_id)
+    .single();
+
+  const earnedByOutPlayer =
+    (playerOutFull?.total_points ?? 0) - (outSquadRow?.baseline_points ?? 0);
+
+  // Bank those earned points before removing player from squad
+  const { data: currentMember } = await adminSupabase
+    .from("league_members")
+    .select("banked_points")
+    .eq("league_id", leagueId)
+    .eq("user_id", user.id)
+    .single();
+
+  await adminSupabase
+    .from("league_members")
+    .update({ banked_points: (currentMember?.banked_points ?? 0) + earnedByOutPlayer })
+    .eq("league_id", leagueId)
+    .eq("user_id", user.id);
+
   // Remove player_out from squad
   const { error: removeError } = await adminSupabase
     .from("squad_players")
