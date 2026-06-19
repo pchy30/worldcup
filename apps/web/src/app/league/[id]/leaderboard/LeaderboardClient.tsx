@@ -309,7 +309,9 @@ export default function LeaderboardClient({
                               </div>
                               <div className="flex flex-col items-end flex-shrink-0">
                                 <span className="text-accent font-bold text-sm leading-none">{player.total_points}</span>
-                                <span className="text-accent/50 text-[10px] leading-none mt-0.5">({player.total_points_overall})</span>
+                                {player.total_points_overall !== player.total_points && (
+                                  <span className="text-accent/50 text-[10px] leading-none mt-0.5">({player.total_points_overall})</span>
+                                )}
                               </div>
                             </div>
                           ))}
