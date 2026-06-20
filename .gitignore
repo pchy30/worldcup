@@ -29,5 +29,6 @@ npm-debug.log*
 # TypeScript
 *.tsbuildinfo
 
-# Claude Code local commands (may contain secrets)
+# Claude Code local commands and logs (may contain secrets)
 .claude/commands/
+.claude/stats-update-log.md
