@@ -128,7 +128,23 @@ export async function POST(request: NextRequest) {
 
   if (memberError) {
     console.error("League member insert error:", memberError.message);
-    // Non-fatal but worth logging
+  }
+
+  // Seed the first transfer window — opens 3 days from now, lasts 24 hours.
+  // The update-transfer-windows edge function will auto-chain subsequent windows.
+  const firstOpen = new Date();
+  firstOpen.setDate(firstOpen.getDate() + 3);
+  const firstClose = new Date(firstOpen);
+  firstClose.setHours(firstClose.getHours() + 24);
+
+  const { error: windowError } = await supabase.from("transfer_windows").insert({
+    league_id: league.id,
+    opens_at: firstOpen.toISOString(),
+    closes_at: firstClose.toISOString(),
+  });
+
+  if (windowError) {
+    console.error("Transfer window seed error:", windowError.message);
   }
 
   return NextResponse.json(
