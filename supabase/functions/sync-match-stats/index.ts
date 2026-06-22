@@ -48,64 +48,9 @@ Deno.serve(async (_req) => {
       });
     }
 
-    // 2. Fetch card events for matches finished since last card sync
-    const { data: settingRow } = await supabase
-      .from("app_settings")
-      .select("value")
-      .eq("key", "last_card_sync_at")
-      .single();
-
-    const lastCardSyncAt = new Date(settingRow?.value ?? "1970-01-01T00:00:00Z");
-    const newlyFinished = matches.filter(
-      (m: any) => m.status === "FINISHED" && new Date(m.lastUpdated ?? m.utcDate) > lastCardSyncAt
-    );
-
+    // Cards are managed manually — auto card detection disabled.
+    const newlyFinished: any[] = [];
     const cardMap = new Map<number, { yellow: number; red: number }>();
-
-    for (const match of newlyFinished) {
-      await sleep(7000); // stay under 10 req/min free tier
-      const detail = await apiFetch(`/matches/${match.id}`);
-      const bookings: any[] = detail.bookings ?? [];
-      for (const booking of bookings) {
-        const playerId: number = booking.player?.id;
-        if (!playerId) continue;
-        const existing = cardMap.get(playerId) ?? { yellow: 0, red: 0 };
-        if (booking.card === "YELLOW_CARD") existing.yellow += 1;
-        else if (booking.card === "RED_CARD" || booking.card === "YELLOW_RED_CARD") existing.red += 1;
-        cardMap.set(playerId, existing);
-      }
-    }
-
-    // Apply accumulated card deltas to players in DB
-    if (cardMap.size > 0) {
-      const apiIds = Array.from(cardMap.keys());
-      const { data: cardedPlayers } = await supabase
-        .from("players")
-        .select("id, api_football_id, yellow_cards, red_cards")
-        .in("api_football_id", apiIds);
-
-      for (const player of cardedPlayers ?? []) {
-        const delta = cardMap.get(player.api_football_id)!;
-        await supabase
-          .from("players")
-          .update({
-            yellow_cards: (player.yellow_cards ?? 0) + delta.yellow,
-            red_cards: (player.red_cards ?? 0) + delta.red,
-          })
-          .eq("id", player.id);
-      }
-    }
-
-    // Record the latest match lastUpdated as the new watermark
-    if (newlyFinished.length > 0) {
-      const latest = newlyFinished.reduce((a: any, b: any) =>
-        new Date(a.lastUpdated ?? a.utcDate) > new Date(b.lastUpdated ?? b.utcDate) ? a : b
-      );
-      await supabase
-        .from("app_settings")
-        .update({ value: latest.lastUpdated ?? latest.utcDate })
-        .eq("key", "last_card_sync_at");
-    }
 
     // Build per-player clean sheet count — only for players who actually played
     // cleanSheetMap: player api_football_id -> number of clean sheets
