@@ -31,9 +31,9 @@ async function apiFetch(path: string, attempt = 1): Promise<any> {
 
 Deno.serve(async (_req) => {
   try {
-    // 1. Fetch scorers (goals + assists) and finished matches in parallel
+    // 1. Fetch scorers (limit=500 covers the full tournament) and finished matches in parallel
     const [scorersData, matchesData] = await Promise.all([
-      apiFetch("/competitions/WC/scorers?limit=100"),
+      apiFetch("/competitions/WC/scorers?limit=500"),
       apiFetch("/competitions/WC/matches?status=FINISHED"),
     ]);
     const scorers = scorersData.scorers ?? [];
