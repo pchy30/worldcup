@@ -42,14 +42,15 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  // 1. Fetch league to check knockout_mode
+  // 1. Fetch league to check knockout_mode and team player cap
   const { data: league } = await supabase
     .from("leagues")
-    .select("knockout_mode")
+    .select("knockout_mode, max_team_players")
     .eq("id", leagueId)
     .single();
 
   const knockoutMode = league?.knockout_mode ?? false;
+  const maxTeamPlayers = league?.max_team_players ?? 2;
 
   // 2. Find open transfer window by time range — status is unreliable
   const now = new Date().toISOString();
@@ -254,13 +255,13 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
   }
 
-  // Max 2 players per national team after transfer (relaxed in knockout mode)
-  if (!knockoutMode) {
+  // Enforce per-team player cap (unlimited when maxTeamPlayers is 99)
+  if (maxTeamPlayers < 99) {
     const newTeamCount = (teamCounts[playerIn.team_id] ?? 0) + 1;
-    if (newTeamCount > 2) {
+    if (newTeamCount > maxTeamPlayers) {
       return NextResponse.json(
         {
-          error: `This transfer would give you more than 2 players from ${
+          error: `This transfer would give you more than ${maxTeamPlayers} players from ${
             (playerInTeam as { name: string } | null)?.name ?? playerIn.team_id
           }.`,
         },

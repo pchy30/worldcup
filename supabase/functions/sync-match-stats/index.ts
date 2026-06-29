@@ -118,13 +118,21 @@ Deno.serve(async (_req) => {
         .eq("id", player.id);
     }
 
-    // 4a. Auto-enable knockout mode on all leagues when QF matches appear
+    // 4a. Auto-enable knockout mode and bump per-team player cap based on current stage
+    const hasFinal = matches.some((m: { stage: string }) => m.stage === "FINAL");
+    const hasSF = matches.some((m: { stage: string }) => m.stage === "SEMI_FINALS");
     const hasQF = matches.some((m: { stage: string }) => m.stage === "QUARTER_FINALS");
+
     if (hasQF) {
-      await supabase
-        .from("leagues")
-        .update({ knockout_mode: true })
-        .eq("knockout_mode", false);
+      await supabase.from("leagues").update({ knockout_mode: true }).eq("knockout_mode", false);
+    }
+    // Bump cap progressively — only increase, never decrease
+    if (hasFinal) {
+      await supabase.from("leagues").update({ max_team_players: 99 }).lt("max_team_players", 99);
+    } else if (hasSF) {
+      await supabase.from("leagues").update({ max_team_players: 4 }).lt("max_team_players", 4);
+    } else if (hasQF) {
+      await supabase.from("leagues").update({ max_team_players: 3 }).lt("max_team_players", 3);
     }
 
     // 5a. Calculate national team bonus points per manager per league
