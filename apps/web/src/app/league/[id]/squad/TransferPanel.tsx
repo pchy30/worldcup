@@ -54,7 +54,8 @@ export default function TransferPanel({
   const isWindowOpen = !!windowId && !!windowClosesAt;
   const transfersRemaining = isWindowOpen ? maxTransfers - transfersUsed : 0;
   const cooldownActive = freeTransferAvailableAt !== null && new Date(freeTransferAvailableAt) > new Date();
-  const hasFreeTransfer = freeTransfers > 0 && !cooldownActive;
+  const hasEliminatedInSquad = squad.some(isEliminated);
+  const hasFreeTransfer = freeTransfers > 0 && !cooldownActive && hasEliminatedInSquad;
 
   // Show tabs only when both modes are simultaneously available
   const showTabs = hasFreeTransfer && isWindowOpen;
