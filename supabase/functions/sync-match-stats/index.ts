@@ -31,13 +31,15 @@ async function apiFetch(path: string, attempt = 1): Promise<any> {
 
 Deno.serve(async (_req) => {
   try {
-    // 1. Fetch scorers (limit=500 covers the full tournament) and finished matches in parallel
+    // 1. Fetch scorers and all matches (finished + scheduled) in parallel
+    // All matches needed to detect when a full stage is complete
     const [scorersData, matchesData] = await Promise.all([
       apiFetch("/competitions/WC/scorers?limit=500"),
-      apiFetch("/competitions/WC/matches?status=FINISHED"),
+      apiFetch("/competitions/WC/matches"),
     ]);
     const scorers = scorersData.scorers ?? [];
-    const matches = matchesData.matches ?? [];
+    const allMatches = matchesData.matches ?? [];
+    const matches = allMatches.filter((m: { status: string }) => m.status === "FINISHED");
 
     // Build map of playerId -> { goals, assists }
     const statsMap = new Map<number, { goals: number; assists: number }>();
@@ -118,20 +120,28 @@ Deno.serve(async (_req) => {
         .eq("id", player.id);
     }
 
-    // 4a. Auto-enable knockout mode and bump per-team player cap based on current stage
-    const hasFinal = matches.some((m: { stage: string }) => m.stage === "FINAL");
-    const hasSF = matches.some((m: { stage: string }) => m.stage === "SEMI_FINALS");
-    const hasQF = matches.some((m: { stage: string }) => m.stage === "QUARTER_FINALS");
+    // 4a. Auto-enable knockout mode and bump per-team player cap when a full stage completes.
+    // A stage is "complete" only when every match in that stage is FINISHED.
+    function stageComplete(stage: string): boolean {
+      const stageMatches = allMatches.filter((m: { stage: string }) => m.stage === stage);
+      return stageMatches.length > 0 && stageMatches.every((m: { status: string }) => m.status === "FINISHED");
+    }
 
-    if (hasQF) {
+    const qfComplete = stageComplete("QUARTER_FINALS");
+    const sfComplete = stageComplete("SEMI_FINALS");
+    const finalComplete = stageComplete("FINAL");
+    const hasAnyQF = allMatches.some((m: { stage: string }) => m.stage === "QUARTER_FINALS");
+
+    // Enable knockout mode as soon as QF matches appear (regardless of completion)
+    if (hasAnyQF) {
       await supabase.from("leagues").update({ knockout_mode: true }).eq("knockout_mode", false);
     }
-    // Bump cap progressively — only increase, never decrease
-    if (hasFinal) {
+    // Bump cap only once the last match of each stage is done — only increase, never decrease
+    if (finalComplete) {
       await supabase.from("leagues").update({ max_team_players: 99 }).lt("max_team_players", 99);
-    } else if (hasSF) {
+    } else if (sfComplete) {
       await supabase.from("leagues").update({ max_team_players: 4 }).lt("max_team_players", 4);
-    } else if (hasQF) {
+    } else if (qfComplete) {
       await supabase.from("leagues").update({ max_team_players: 3 }).lt("max_team_players", 3);
     }
 
