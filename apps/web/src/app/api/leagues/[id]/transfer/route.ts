@@ -89,8 +89,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   const freeTransferAvailableAt = memberRow?.free_transfer_available_at ?? null;
   const cooldownActive =
     freeTransferAvailableAt !== null && new Date(freeTransferAvailableAt) > new Date(now);
+  // Free transfer applies whenever: eliminated player out, cooldown passed, transfers available.
+  // This includes during an open window — free transfer takes priority to preserve window slots.
   const isFreeTransfer =
-    !openWindow && playerOutEliminated && freeTransfers > 0 && !cooldownActive;
+    playerOutEliminated && freeTransfers > 0 && !cooldownActive;
 
   if (!openWindow && !isFreeTransfer) {
     if (playerOutEliminated && freeTransfers > 0 && cooldownActive) {
@@ -114,9 +116,9 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  // 5. Check transfer quota (window transfers only)
+  // 5. Check transfer quota (window transfers only — skipped when using a free transfer)
   let transfersUsed = 0;
-  if (openWindow) {
+  if (openWindow && !isFreeTransfer) {
     const { count } = await supabase
       .from("transfers")
       .select("id", { count: "exact", head: true })
@@ -131,6 +133,15 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         { status: 400 }
       );
     }
+  } else if (openWindow && isFreeTransfer) {
+    // Still fetch transfersUsed so we can report remaining window slots accurately
+    const { count } = await supabase
+      .from("transfers")
+      .select("id", { count: "exact", head: true })
+      .eq("league_id", leagueId)
+      .eq("manager_id", user.id)
+      .eq("transfer_window_id", openWindow.id);
+    transfersUsed = count ?? 0;
   }
 
   // 6. Verify player_out is in this manager's squad
@@ -331,7 +342,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       manager_id: user.id,
       player_out_id,
       player_in_id,
-      transfer_window_id: openWindow?.id ?? null,
+      transfer_window_id: isFreeTransfer ? null : (openWindow?.id ?? null),
       confirmed_at: new Date().toISOString(),
     })
     .select()
@@ -355,7 +366,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   }
 
   const transfersRemaining = openWindow
-    ? MAX_TRANSFERS_PER_WINDOW - (transfersUsed + 1)
+    ? MAX_TRANSFERS_PER_WINDOW - (isFreeTransfer ? transfersUsed : transfersUsed + 1)
     : null;
 
   // Return updated squad
