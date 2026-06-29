@@ -277,6 +277,7 @@ export default async function SquadPage({ params }: PageProps) {
           maxTransfers={2}
           freeTransfers={freeTransfers}
           freeTransferAvailableAt={freeTransferAvailableAt}
+          nextWindowOpensAt={nextWindowOpensAt}
           nextFixtures={nextFixtures}
         />
       )}

@@ -21,6 +21,7 @@ interface TransferPanelProps {
   maxTransfers: number;
   freeTransfers?: number;
   freeTransferAvailableAt?: string | null;
+  nextWindowOpensAt?: string | null;
   nextFixtures?: Record<string, NextFixture>;
 }
 
@@ -35,6 +36,7 @@ export default function TransferPanel({
   maxTransfers,
   freeTransfers: initialFreeTransfers = 0,
   freeTransferAvailableAt: initialFreeTransferAvailableAt = null,
+  nextWindowOpensAt = null,
   nextFixtures = {},
 }: TransferPanelProps) {
   const router = useRouter();
@@ -153,6 +155,32 @@ export default function TransferPanel({
             <p className="text-xs text-accent/70 mt-0.5">
               One or more of your players&apos; nations have been eliminated. Use your free transfer{freeTransfers !== 1 ? "s" : ""} to replace them — no window needed.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Next window countdown — shown when no window is open */}
+      {!isWindowOpen && nextWindowOpensAt && (
+        <div className="card mb-4 border-blue-500/20">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Clock className="w-4 h-4 text-blue-400" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white">Next transfer window</p>
+                <p className="text-xs text-muted mt-0.5">
+                  Opens {new Date(nextWindowOpensAt).toLocaleDateString("en-GB", {
+                    weekday: "short", day: "numeric", month: "short",
+                    hour: "2-digit", minute: "2-digit",
+                  })}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted">
+              <span className="text-xs">Opens in</span>
+              <CountdownTimer deadline={nextWindowOpensAt} onExpired={() => router.refresh()} />
+            </div>
           </div>
         </div>
       )}
