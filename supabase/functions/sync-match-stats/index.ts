@@ -161,18 +161,77 @@ Deno.serve(async (_req) => {
       }
     }
 
-    // Fetch national_teams api_football_id map
+    // Fetch national_teams api_football_id map (include is_eliminated for auto-detection)
     const { data: allNationalTeams } = await supabase
       .from("national_teams")
-      .select("id, api_football_id");
+      .select("id, api_football_id, is_eliminated");
 
     const teamApiIdMap = new Map<string, number>();
     const apiIdToTeamId = new Map<number, string>();
+    const teamIsEliminated = new Map<number, boolean>();
     for (const t of allNationalTeams ?? []) {
       if (t.api_football_id) {
         teamApiIdMap.set(t.id, t.api_football_id);
         apiIdToTeamId.set(t.api_football_id, t.id);
+        teamIsEliminated.set(t.api_football_id, t.is_eliminated ?? false);
       }
+    }
+
+    // Auto-detect eliminations from knockout stage matches.
+    // The loser of any knockout match is eliminated. Group stage eliminations remain manual.
+    const KNOCKOUT_STAGES = new Set(["LAST_32", "LAST_16", "QUARTER_FINALS", "SEMI_FINALS", "THIRD_PLACE", "FINAL"]);
+    const availableAt = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString();
+    let autoEliminatedCount = 0;
+
+    for (const match of matches) {
+      if (!KNOCKOUT_STAGES.has(match.stage)) continue;
+      const winner = match.score?.winner;
+      if (!winner || winner === "DRAW") continue;
+
+      const loserApiId: number = winner === "HOME_TEAM" ? match.awayTeam?.id : match.homeTeam?.id;
+      if (!loserApiId) continue;
+      if (teamIsEliminated.get(loserApiId)) continue; // already marked
+
+      const loserTeamId = apiIdToTeamId.get(loserApiId);
+      if (!loserTeamId) continue;
+
+      // Mark as eliminated
+      await supabase.from("national_teams").update({ is_eliminated: true }).eq("id", loserTeamId);
+      teamIsEliminated.set(loserApiId, true);
+      autoEliminatedCount++;
+
+      // Award free transfers to all managers who have a player from this team
+      const { data: affectedSquads } = await supabase
+        .from("squad_players")
+        .select("manager_id, league_id, player:players!inner(team_id)")
+        .eq("player.team_id", loserTeamId);
+
+      const seen = new Set<string>();
+      for (const row of affectedSquads ?? []) {
+        const key = `${row.manager_id}::${row.league_id}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+
+        const { data: member } = await supabase
+          .from("league_members")
+          .select("free_transfers")
+          .eq("user_id", row.manager_id)
+          .eq("league_id", row.league_id)
+          .maybeSingle();
+
+        if (!member) continue;
+
+        await supabase
+          .from("league_members")
+          .update({
+            free_transfers: member.free_transfers + 1,
+            free_transfer_available_at: availableAt,
+          })
+          .eq("user_id", row.manager_id)
+          .eq("league_id", row.league_id);
+      }
+
+      console.log(`Auto-eliminated team api_id=${loserApiId} (db id=${loserTeamId}), stage=${match.stage}`);
     }
 
     // Persist wins/draws/bonus_points per national team
@@ -267,7 +326,7 @@ Deno.serve(async (_req) => {
     }
 
     return new Response(
-      JSON.stringify({ ok: true, scorers: scorers.length, matches: matches.length, card_matches_checked: newlyFinished.length, cards_found: cardMap.size, managers_updated: memberMap.size }),
+      JSON.stringify({ ok: true, scorers: scorers.length, matches: matches.length, auto_eliminated: autoEliminatedCount, card_matches_checked: newlyFinished.length, cards_found: cardMap.size, managers_updated: memberMap.size }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (e) {
