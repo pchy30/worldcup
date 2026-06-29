@@ -121,7 +121,7 @@ export default function TransferPanel({
     }
   };
 
-  const canTransfer = isFreeTab ? hasFreeTransfer : transfersRemaining > 0;
+  const canTransfer = isFreeTab ? hasFreeTransfer : (isWindowOpen && transfersRemaining > 0);
 
   function handleTabSwitch(tab: "free" | "window") {
     setActiveTab(tab);
@@ -193,8 +193,8 @@ export default function TransferPanel({
         </div>
       )}
 
-      {/* Window header */}
-      {!isFreeTab && (
+      {/* Window header — only when a window is actually open */}
+      {!isFreeTab && isWindowOpen && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div>
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
@@ -220,7 +220,7 @@ export default function TransferPanel({
       )}
 
       {/* Window exhausted */}
-      {!isFreeTab && transfersRemaining === 0 && (
+      {!isFreeTab && isWindowOpen && transfersRemaining === 0 && (
         <div className="bg-muted/10 border border-muted/30 text-muted rounded-lg px-4 py-3 text-sm mb-4">
           You have used all {maxTransfers} transfers for this window. Come back next window.
         </div>
