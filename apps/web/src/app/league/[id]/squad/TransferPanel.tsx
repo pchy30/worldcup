@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Player, PlayerPosition } from "@wcf/shared";
 import PlayerCard from "@/components/PlayerCard";
 import CountdownTimer from "@/components/CountdownTimer";
-import { ArrowRightLeft, Search, X, Loader2, Calendar, Gift } from "lucide-react";
+import { ArrowRightLeft, Search, X, Loader2, Calendar, Gift, Clock } from "lucide-react";
 import type { NextFixture } from "./page";
 
 const POSITIONS: PlayerPosition[] = ["GK", "DEF", "MID", "FWD"];
@@ -20,6 +20,7 @@ interface TransferPanelProps {
   transfersUsed: number;
   maxTransfers: number;
   freeTransfers?: number;
+  freeTransferAvailableAt?: string | null;
   nextFixtures?: Record<string, NextFixture>;
 }
 
@@ -33,6 +34,7 @@ export default function TransferPanel({
   transfersUsed: initialTransfersUsed,
   maxTransfers,
   freeTransfers: initialFreeTransfers = 0,
+  freeTransferAvailableAt: initialFreeTransferAvailableAt = null,
   nextFixtures = {},
 }: TransferPanelProps) {
   const router = useRouter();
@@ -40,8 +42,10 @@ export default function TransferPanel({
   const [available, setAvailable] = useState<Player[]>(initialAvailable);
   const [transfersUsed, setTransfersUsed] = useState(initialTransfersUsed);
   const [freeTransfers, setFreeTransfers] = useState(initialFreeTransfers);
+  const [freeTransferAvailableAt, setFreeTransferAvailableAt] = useState<string | null>(initialFreeTransferAvailableAt);
   const isWindowOpen = !!windowId && !!windowClosesAt;
   const transfersRemaining = isWindowOpen ? maxTransfers - transfersUsed : 0;
+  const cooldownActive = freeTransferAvailableAt !== null && new Date(freeTransferAvailableAt) > new Date();
   const [playerOut, setPlayerOut] = useState<Player | null>(null);
   const [playerIn, setPlayerIn] = useState<Player | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -102,6 +106,7 @@ export default function TransferPanel({
       ]);
       if (isWindowOpen) setTransfersUsed((n) => n + 1);
       if (data.free_transfers_remaining !== undefined) setFreeTransfers(data.free_transfers_remaining);
+      if ("free_transfer_available_at" in data) setFreeTransferAvailableAt(data.free_transfer_available_at ?? null);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 4000);
       setPlayerOut(null);
@@ -114,12 +119,29 @@ export default function TransferPanel({
     }
   };
 
-  const canTransfer = transfersRemaining > 0 || freeTransfers > 0;
+  const canTransfer = transfersRemaining > 0 || (freeTransfers > 0 && !cooldownActive);
 
   return (
     <div className="mb-10">
-      {/* Free transfer banner */}
-      {freeTransfers > 0 && (
+      {/* Free transfer banner — cooldown or ready */}
+      {freeTransfers > 0 && cooldownActive && freeTransferAvailableAt && (
+        <div className="flex items-start gap-3 bg-white/5 border border-muted/30 text-muted rounded-xl px-4 py-3 mb-4">
+          <Clock className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-white">
+              Free transfer{freeTransfers !== 1 ? "s" : ""} unlocking in
+            </p>
+            <CountdownTimer
+              deadline={freeTransferAvailableAt}
+              onExpired={() => router.refresh()}
+            />
+            <p className="text-xs text-muted/70 mt-1">
+              A 12-hour wait applies after an elimination before you can swap players out.
+            </p>
+          </div>
+        </div>
+      )}
+      {freeTransfers > 0 && !cooldownActive && (
         <div className="flex items-start gap-3 bg-accent/10 border border-accent/30 text-accent rounded-xl px-4 py-3 mb-4">
           <Gift className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <div>

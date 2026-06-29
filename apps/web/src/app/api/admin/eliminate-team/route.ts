@@ -73,9 +73,13 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
+      const availableAt = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString();
       const { error: updateError } = await adminSupabase
         .from("league_members")
-        .update({ free_transfers: member.free_transfers + 1 })
+        .update({
+          free_transfers: member.free_transfers + 1,
+          free_transfer_available_at: availableAt,
+        })
         .eq("user_id", row.manager_id)
         .eq("league_id", row.league_id);
 

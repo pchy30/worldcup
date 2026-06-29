@@ -77,19 +77,32 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     : null;
   const playerOutEliminated = playerOutTeam?.is_eliminated ?? false;
 
-  // 4. Fetch manager's free_transfers
+  // 4. Fetch manager's free_transfers and cooldown timestamp
   const { data: memberRow } = await supabase
     .from("league_members")
-    .select("free_transfers")
+    .select("free_transfers, free_transfer_available_at")
     .eq("league_id", leagueId)
     .eq("user_id", user.id)
     .single();
 
   const freeTransfers = memberRow?.free_transfers ?? 0;
-  const isFreeTransfer = !openWindow && playerOutEliminated && freeTransfers > 0;
+  const freeTransferAvailableAt = memberRow?.free_transfer_available_at ?? null;
+  const cooldownActive =
+    freeTransferAvailableAt !== null && new Date(freeTransferAvailableAt) > new Date(now);
+  const isFreeTransfer =
+    !openWindow && playerOutEliminated && freeTransfers > 0 && !cooldownActive;
 
   if (!openWindow && !isFreeTransfer) {
-    if (!openWindow && playerOutEliminated && freeTransfers === 0) {
+    if (playerOutEliminated && freeTransfers > 0 && cooldownActive) {
+      return NextResponse.json(
+        {
+          error: "Your free transfer is not available yet. Please wait 12 hours after the elimination before swapping.",
+          free_transfer_available_at: freeTransferAvailableAt,
+        },
+        { status: 400 }
+      );
+    }
+    if (playerOutEliminated && freeTransfers === 0) {
       return NextResponse.json(
         { error: "You have no free transfers remaining for eliminated players." },
         { status: 400 }
@@ -328,11 +341,15 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     console.error("Transfer record insert error:", transferRecordError.message);
   }
 
-  // Decrement free_transfers if this was a free transfer
+  // Decrement free_transfers if this was a free transfer; clear cooldown if exhausted
   if (isFreeTransfer) {
+    const newCount = freeTransfers - 1;
     await supabase
       .from("league_members")
-      .update({ free_transfers: freeTransfers - 1 })
+      .update({
+        free_transfers: newCount,
+        free_transfer_available_at: newCount === 0 ? null : freeTransferAvailableAt,
+      })
       .eq("league_id", leagueId)
       .eq("user_id", user.id);
   }
@@ -354,6 +371,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       squad: updatedSquad,
       transfers_remaining: transfersRemaining,
       free_transfers_remaining: isFreeTransfer ? freeTransfers - 1 : freeTransfers,
+      free_transfer_available_at: isFreeTransfer ? null : freeTransferAvailableAt,
     },
     { status: 200 }
   );

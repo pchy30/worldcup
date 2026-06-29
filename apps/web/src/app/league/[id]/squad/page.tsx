@@ -148,14 +148,15 @@ export default async function SquadPage({ params }: PageProps) {
     transfersUsed = count ?? 0;
   }
 
-  // Fetch manager's free transfer balance
+  // Fetch manager's free transfer balance and cooldown
   const { data: memberRow } = await supabase
     .from("league_members")
-    .select("free_transfers, total_points")
+    .select("free_transfers, free_transfer_available_at, total_points")
     .eq("league_id", id)
     .eq("user_id", user.id)
     .single();
   const freeTransfers = memberRow?.free_transfers ?? 0;
+  const freeTransferAvailableAt: string | null = memberRow?.free_transfer_available_at ?? null;
 
   const showTransferPanel = !!openWindow || freeTransfers > 0;
 
@@ -275,6 +276,7 @@ export default async function SquadPage({ params }: PageProps) {
           transfersUsed={transfersUsed}
           maxTransfers={2}
           freeTransfers={freeTransfers}
+          freeTransferAvailableAt={freeTransferAvailableAt}
           nextFixtures={nextFixtures}
         />
       )}
