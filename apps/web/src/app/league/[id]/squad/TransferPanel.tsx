@@ -226,8 +226,8 @@ export default function TransferPanel({
         </div>
       )}
 
-      {/* Next window countdown — shown in free tab when no window is open */}
-      {isFreeTab && !isWindowOpen && nextWindowOpensAt && (
+      {/* Next window countdown — shown whenever no window is open */}
+      {!isWindowOpen && nextWindowOpensAt && (
         <div className="card mb-4 border-blue-500/20">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
