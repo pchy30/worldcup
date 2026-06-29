@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Trophy, Users, HelpCircle, BarChart2, Calendar } from "lucide-react";
 import NavbarLogout from "./NavbarLogout";
 import MobileMenuClient from "./MobileMenuClient";
+import LiveScoresBanner from "./LiveScoresBanner";
 
 export default async function Navbar() {
   const supabase = createClient();
@@ -26,6 +27,7 @@ export default async function Navbar() {
 
   return (
     <nav className="bg-surface sticky top-0 z-50" style={{ borderBottom: "1px solid rgba(245,183,0,0.15)" }}>
+      <LiveScoresBanner />
       {/* WC colour stripe */}
       <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, #003DA5 0%, #F5B700 50%, #E5001B 100%)" }} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
