@@ -105,11 +105,13 @@ Deno.serve(async (req) => {
   // We don't re-fetch match results here — just preserve existing bonus_points
   const { data: existingMembers } = await supabase
     .from("league_members")
-    .select("user_id, league_id, bonus_points");
+    .select("user_id, league_id, bonus_points, banked_points");
 
   const bonusMap = new Map<string, number>();
+  const bankedMap = new Map<string, number>();
   for (const m of existingMembers ?? []) {
     bonusMap.set(`${m.user_id}::${m.league_id}`, m.bonus_points ?? 0);
+    bankedMap.set(`${m.user_id}::${m.league_id}`, m.banked_points ?? 0);
   }
 
   const memberMap = new Map<string, { total_points: number; goals_scored: number; assists: number; highest: number }>();
@@ -130,10 +132,11 @@ Deno.serve(async (req) => {
   for (const [key, totals] of memberMap.entries()) {
     const [manager_id, league_id] = key.split("::");
     const bonus = bonusMap.get(key) ?? 0;
+    const banked = bankedMap.get(key) ?? 0;
     await supabase
       .from("league_members")
       .update({
-        total_points: totals.total_points + bonus,
+        total_points: totals.total_points + bonus + banked,
         goals_scored: totals.goals_scored,
         assists: totals.assists,
         highest_individual_player_points: totals.highest,

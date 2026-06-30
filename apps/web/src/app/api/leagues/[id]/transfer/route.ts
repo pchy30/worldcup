@@ -273,6 +273,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   // All checks passed — execute transfer using admin client to bypass RLS
 
   // Fetch player_out's current total_points and baseline so we can bank earned pts
+  // once the transfer actually succeeds (banking before that would double-count
+  // points if the insert below fails and player_out has to be restored).
   const { data: playerOutFull } = await supabase
     .from("players")
     .select("total_points")
@@ -287,22 +289,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     .eq("player_id", player_out_id)
     .single();
 
-  const earnedByOutPlayer =
-    (playerOutFull?.total_points ?? 0) - (outSquadRow?.baseline_points ?? 0);
-
-  // Bank those earned points before removing player from squad
-  const { data: currentMember } = await adminSupabase
-    .from("league_members")
-    .select("banked_points")
-    .eq("league_id", leagueId)
-    .eq("user_id", user.id)
-    .single();
-
-  await adminSupabase
-    .from("league_members")
-    .update({ banked_points: (currentMember?.banked_points ?? 0) + earnedByOutPlayer })
-    .eq("league_id", leagueId)
-    .eq("user_id", user.id);
+  const outBaselinePoints = outSquadRow?.baseline_points ?? 0;
+  const earnedByOutPlayer = (playerOutFull?.total_points ?? 0) - outBaselinePoints;
 
   // Remove player_out from squad
   const { error: removeError } = await adminSupabase
@@ -326,11 +314,13 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   });
 
   if (addError) {
-    // Rollback
+    // Rollback — restore player_out with its original baseline so no points
+    // are lost or double-counted now that nothing has been banked yet.
     await adminSupabase.from("squad_players").insert({
       league_id: leagueId,
       manager_id: user.id,
       player_id: player_out_id,
+      baseline_points: outBaselinePoints,
     });
     const isDuplicate = addError.code === "23505";
     return NextResponse.json(
@@ -342,6 +332,20 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       { status: isDuplicate ? 400 : 500 }
     );
   }
+
+  // Transfer succeeded — now bank player_out's earned points
+  const { data: currentMember } = await adminSupabase
+    .from("league_members")
+    .select("banked_points")
+    .eq("league_id", leagueId)
+    .eq("user_id", user.id)
+    .single();
+
+  await adminSupabase
+    .from("league_members")
+    .update({ banked_points: (currentMember?.banked_points ?? 0) + earnedByOutPlayer })
+    .eq("league_id", leagueId)
+    .eq("user_id", user.id);
 
   // Insert transfer record (window_id is null for free transfers outside a window)
   const { data: transferRecord, error: transferRecordError } = await supabase

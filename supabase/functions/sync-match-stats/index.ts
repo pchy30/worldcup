@@ -294,8 +294,13 @@ Deno.serve(async (_req) => {
       bankedMap.set(`${m.user_id}::${m.league_id}`, m.banked_points ?? 0);
     }
 
-    // Aggregate per (manager_id, league_id)
+    // Aggregate per (manager_id, league_id) — seed every league member first so
+    // managers with no squad_players yet (e.g. bonus team picked before the
+    // draft completes) still get their bonus_points/total_points written below.
     const memberMap = new Map<string, { total_points: number; goals_scored: number; assists: number; highest: number }>();
+    for (const m of allMembers ?? []) {
+      memberMap.set(`${m.user_id}::${m.league_id}`, { total_points: 0, goals_scored: 0, assists: 0, highest: 0 });
+    }
     for (const row of squadRows ?? []) {
       const player = Array.isArray(row.player) ? row.player[0] : row.player;
       if (!player) continue;
