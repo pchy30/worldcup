@@ -163,6 +163,7 @@ export default async function SquadPage({ params }: PageProps) {
   // All available players if window is open OR free transfer available
   let availablePlayers: Player[] = [];
   let nextFixtures: Record<string, NextFixture> = {};
+  let takenByMap: Record<string, string> = {};
   if (showTransferPanel) {
     const { data: allPlayersRaw } = await supabase
       .from("players")
@@ -178,6 +179,29 @@ export default async function SquadPage({ params }: PageProps) {
         const team = Array.isArray(p.team) ? p.team[0] : p.team;
         return !team?.is_eliminated;
       });
+
+      // Flag players already owned by another manager — they're still
+      // shown (knockout mode doesn't filter them out) but can't actually
+      // be traded for due to the league-wide squad_players unique constraint.
+      const { data: allSquadOwners } = await supabase
+        .from("squad_players")
+        .select("player_id, manager_id")
+        .eq("league_id", id);
+
+      const { data: members } = await supabase
+        .from("league_members")
+        .select("user_id, display_name")
+        .eq("league_id", id);
+
+      const nameByUserId: Record<string, string> = {};
+      for (const m of members ?? []) {
+        nameByUserId[m.user_id] = m.display_name;
+      }
+
+      for (const row of allSquadOwners ?? []) {
+        if (row.manager_id === user.id) continue;
+        takenByMap[row.player_id] = nameByUserId[row.manager_id] ?? "another manager";
+      }
     } else {
       const { data: allSquads } = await supabase
         .from("squad_players")
@@ -279,6 +303,7 @@ export default async function SquadPage({ params }: PageProps) {
           freeTransferAvailableAt={freeTransferAvailableAt}
           nextWindowOpensAt={nextWindowOpensAt}
           nextFixtures={nextFixtures}
+          takenByMap={takenByMap}
         />
       )}
 

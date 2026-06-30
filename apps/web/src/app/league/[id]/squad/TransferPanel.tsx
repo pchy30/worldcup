@@ -23,6 +23,7 @@ interface TransferPanelProps {
   freeTransferAvailableAt?: string | null;
   nextWindowOpensAt?: string | null;
   nextFixtures?: Record<string, NextFixture>;
+  takenByMap?: Record<string, string>;
 }
 
 function isEliminated(player: Player): boolean {
@@ -43,6 +44,7 @@ export default function TransferPanel({
   freeTransferAvailableAt: initialFreeTransferAvailableAt = null,
   nextWindowOpensAt = null,
   nextFixtures = {},
+  takenByMap = {},
 }: TransferPanelProps) {
   const router = useRouter();
   const [squad, setSquad] = useState<Player[]>(initialSquad);
@@ -352,14 +354,24 @@ export default function TransferPanel({
             {filteredAvailable.map((player) => {
               const teamName = Array.isArray(player.team) ? player.team[0]?.name : player.team?.name;
               const fixture = teamName ? nextFixtures[teamName] : undefined;
+              const takenBy = takenByMap[player.id];
               return (
                 <div key={player.id}>
-                  <PlayerCard
-                    player={player}
-                    selectable
-                    selected={playerIn?.id === player.id}
-                    onClick={() => setPlayerIn(playerIn?.id === player.id ? null : player)}
-                  />
+                  {takenBy && (
+                    <div className="flex items-center gap-1 px-2 pb-0.5">
+                      <span className="text-[10px] font-bold text-wc-red uppercase tracking-wide">
+                        Taken by {takenBy}
+                      </span>
+                    </div>
+                  )}
+                  <div className={takenBy ? "opacity-30 pointer-events-none" : ""}>
+                    <PlayerCard
+                      player={player}
+                      selectable
+                      selected={playerIn?.id === player.id}
+                      onClick={() => setPlayerIn(playerIn?.id === player.id ? null : player)}
+                    />
+                  </div>
                   {fixture && (
                     <div className="flex items-center gap-1 px-2 py-1 text-[11px] text-muted">
                       <Calendar className="w-3 h-3 flex-shrink-0" />
