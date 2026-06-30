@@ -332,7 +332,15 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       manager_id: user.id,
       player_id: player_out_id,
     });
-    return NextResponse.json({ error: addError.message }, { status: 500 });
+    const isDuplicate = addError.code === "23505";
+    return NextResponse.json(
+      {
+        error: isDuplicate
+          ? "This player is already taken by another manager."
+          : addError.message,
+      },
+      { status: isDuplicate ? 400 : 500 }
+    );
   }
 
   // Insert transfer record (window_id is null for free transfers outside a window)
